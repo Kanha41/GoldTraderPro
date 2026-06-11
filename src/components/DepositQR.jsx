@@ -29,7 +29,7 @@ const DepositQR = () => {
     }
     try {
       const token = localStorage.getItem('token');
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+      const API_URL = import.meta.env.VITE_API_URL || 'https://goldtraderpro-production.up.railway.app';
       const res = await fetch(`${API_URL}/api/verify-qr-payment`, {
         method: 'POST',
         headers: { 

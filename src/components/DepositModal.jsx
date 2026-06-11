@@ -77,7 +77,7 @@ const DepositModal = ({ onClose }) => {
           handler: async function (response) {
             try {
               const token = localStorage.getItem('token');
-              const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+              const API_URL = import.meta.env.VITE_API_URL || 'https://goldtraderpro-production.up.railway.app';
               const verifyRes = await fetch(`${API_URL}/api/verify-payment`, {
                 method: 'POST',
                 headers: { 

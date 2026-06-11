@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AppContext } from './appContextStore';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+const API_URL = import.meta.env.VITE_API_URL || 'https://goldtraderpro-production.up.railway.app';
 
 export const AppProvider = ({ children }) => {
   const [user, setUser] = useState(() => {

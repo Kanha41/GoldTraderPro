@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/useAppContext';
 import { LogIn, UserPlus, ShieldCheck, Mail, User, Lock, ArrowLeft, KeyRound } from 'lucide-react';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+const API_URL = import.meta.env.VITE_API_URL || 'https://goldtraderpro-production.up.railway.app';
 
 const Auth = () => {
   // Modes: 'signin', 'signup', 'forgot'
