@@ -307,20 +307,20 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  // Admin Action: Approve user withdrawal request
-  const approveWithdrawal = async (userId, transactionId) => {
+  // Admin Action: Approve or Reject user withdrawal/deposit request
+  const processTransactionRequest = async (userId, transactionId, action) => {
     try {
       const res = await fetch(`${API_URL}/api/admin/approve-transaction`, {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ userId, transactionId })
+        body: JSON.stringify({ userId, transactionId, action })
       });
       const data = await res.json();
       if (data.success) {
         await loadUserData();
       }
     } catch (err) {
-      console.error('Failed to approve transaction:', err);
+      console.error('Failed to process transaction:', err);
     }
   };
 
@@ -460,7 +460,7 @@ export const AppProvider = ({ children }) => {
     updateProfileDetails,
     verification,
     updateVerification,
-    approveWithdrawal
+    processTransactionRequest
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

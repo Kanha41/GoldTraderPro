@@ -69,29 +69,24 @@ const TradingPlatform = () => {
     trades.forEach(trade => {
       if (trade.status !== 'OPEN') return;
       
-      // 10 pips = 0.1 for Gold proxy usually, but let's assume 10 pips = 1.0 price difference for demo
-      const pipValue = 1.0; 
-      const tpDistance = 5 * pipValue;
-      const slDistance = 1 * pipValue;
-
       if (trade.type === 'BUY') {
-        if (livePrice >= trade.entryPrice + tpDistance) {
-          const reward = trade.entryPrice > 0 ? 140 : 80;
+        if (trade.takeProfit && livePrice >= trade.takeProfit) {
+          const reward = trade.price > 0 ? 140 : 80;
           completeTrade(trade.id, reward); // TP hit
           setToast({ message: `Achieved a TP and added ${reward} Rs!`, type: 'success' });
           setTimeout(() => setToast(null), 4000);
-        } else if (livePrice <= trade.entryPrice - slDistance) {
+        } else if (trade.stopLoss && livePrice <= trade.stopLoss) {
           completeTrade(trade.id, 0); // SL hit (no reward)
           setToast({ message: "You lost the trade for trade price of 80 Rs bid amount.", type: 'error' });
           setTimeout(() => setToast(null), 4000);
         }
       } else if (trade.type === 'SELL') {
-        if (livePrice <= trade.entryPrice - tpDistance) {
-          const reward = trade.entryPrice > 0 ? 140 : 80;
+        if (trade.takeProfit && livePrice <= trade.takeProfit) {
+          const reward = trade.price > 0 ? 140 : 80;
           completeTrade(trade.id, reward); // TP hit
           setToast({ message: `Achieved a TP and added ${reward} Rs!`, type: 'success' });
           setTimeout(() => setToast(null), 4000);
-        } else if (livePrice >= trade.entryPrice + slDistance) {
+        } else if (trade.stopLoss && livePrice >= trade.stopLoss) {
           completeTrade(trade.id, 0); // SL hit
           setToast({ message: "You lost the trade for trade price of 80 Rs bid amount.", type: 'error' });
           setTimeout(() => setToast(null), 4000);
@@ -118,10 +113,17 @@ const TradingPlatform = () => {
       return;
     }
 
+    const pipValue = 1.0; 
+    const tpDistance = 5 * pipValue;
+    const slDistance = 1 * pipValue;
+
     addTrade({
+      pair: 'PAXG/USDT',
       type,
-      quantity,
-      entryPrice: livePrice,
+      amount: quantity,
+      price: livePrice,
+      takeProfit: type === 'BUY' ? livePrice + tpDistance : livePrice - tpDistance,
+      stopLoss: type === 'BUY' ? livePrice - slDistance : livePrice + slDistance,
       status: 'OPEN'
     });
     

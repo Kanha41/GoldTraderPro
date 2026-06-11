@@ -160,16 +160,16 @@ const HistoryScreen = () => {
                       }}>
                         {trade.type}
                       </span>
-                      <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Qty: {trade.quantity} Lots</span>
+                      <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Qty: {Number(trade.amount || 0)} Lots</span>
                     </div>
                     <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                      Entry: ${trade.entryPrice.toFixed(2)}
+                      Entry: ${Number(trade.price || 0).toFixed(2)}
                     </span>
                   </div>
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-secondary)', background: 'rgba(0,0,0,0.2)', padding: '8px 12px', borderRadius: '6px' }}>
-                    <span>Target Profit: ${(trade.type === 'BUY' ? trade.entryPrice + 0.5 : trade.entryPrice - 0.5).toFixed(2)}</span>
-                    <span>Stop Loss: ${(trade.type === 'BUY' ? trade.entryPrice - 1.0 : trade.entryPrice + 1.0).toFixed(2)}</span>
+                    <span>Target Profit: ${(trade.takeProfit || 0).toFixed(2)}</span>
+                    <span>Stop Loss: ${(trade.stopLoss || 0).toFixed(2)}</span>
                   </div>
 
                 </div>
@@ -203,10 +203,10 @@ const HistoryScreen = () => {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <strong style={{ color: trade.type === 'BUY' ? 'var(--buy-color)' : 'var(--sell-color)', fontSize: '14px' }}>{trade.type}</strong>
-                        <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Qty: {trade.quantity}</span>
+                        <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Qty: {Number(trade.amount || 0)}</span>
                       </div>
                       <small style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                        Entry: ${trade.entryPrice.toFixed(2)}
+                        Entry: ${Number(trade.price || 0).toFixed(2)}
                       </small>
                     </div>
 

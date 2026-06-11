@@ -563,10 +563,12 @@ app.post('/api/trades/add', authenticateToken, async (req, res) => {
     await Trade.create({
       userId: userObj.id,
       isDemo,
-      pair: tradeDetails.pair,
+      pair: tradeDetails.pair || 'PAXG/USDT',
       type: tradeDetails.type,
       amount: tradeDetails.amount,
       price: tradeDetails.price,
+      takeProfit: tradeDetails.takeProfit,
+      stopLoss: tradeDetails.stopLoss,
       status: 'OPEN',
       date: new Date()
     }, { transaction: t });
@@ -1023,9 +1025,9 @@ app.post('/api/admin/user-role', authenticateToken, checkAdmin, async (req, res)
   }
 });
 
-// Approve Pending Withdrawal / Deposit Transaction
+// Approve/Reject Pending Withdrawal / Deposit Transaction
 app.post('/api/admin/approve-transaction', authenticateToken, checkAdmin, async (req, res) => {
-  const { userId, transactionId } = req.body;
+  const { userId, transactionId, action } = req.body;
   const t = await sequelize.transaction();
 
   try {
@@ -1041,17 +1043,33 @@ app.post('/api/admin/approve-transaction', authenticateToken, checkAdmin, async 
       return res.status(404).json({ success: false, message: 'Transaction not found.' });
     }
 
-    transaction.status = 'APPROVED';
-    await transaction.save({ transaction: t });
+    if (action === 'REJECT') {
+      transaction.status = 'REJECTED';
+      await transaction.save({ transaction: t });
+      
+      // If it is a withdrawal, refund the deducted amount back to the user's active balance
+      if (transaction.type === 'WITHDRAWAL') {
+        if (transaction.isDemo) {
+          targetUser.demoBalance = parseFloat(targetUser.demoBalance) + parseFloat(transaction.amount);
+        } else {
+          targetUser.balance = parseFloat(targetUser.balance) + parseFloat(transaction.amount);
+        }
+        await targetUser.save({ transaction: t });
+      }
+    } else {
+      // Default to APPROVE
+      transaction.status = 'APPROVED';
+      await transaction.save({ transaction: t });
 
-    // If it is a real deposit, credit target user balance
-    if (transaction.type === 'DEPOSIT' && !transaction.isDemo) {
-      targetUser.balance = parseFloat(targetUser.balance) + parseFloat(transaction.amount);
-      await targetUser.save({ transaction: t });
+      // If it is a real deposit, credit target user balance
+      if (transaction.type === 'DEPOSIT' && !transaction.isDemo) {
+        targetUser.balance = parseFloat(targetUser.balance) + parseFloat(transaction.amount);
+        await targetUser.save({ transaction: t });
+      }
     }
 
     await t.commit();
-    res.json({ success: true, message: 'Transaction successfully approved!' });
+    res.json({ success: true, message: `Transaction successfully ${action === 'REJECT' ? 'rejected' : 'approved'}!` });
   } catch (err) {
     await t.rollback();
     console.error('Approve transaction error:', err);

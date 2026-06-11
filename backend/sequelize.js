@@ -109,6 +109,14 @@ const Trade = sequelize.define('Trade', {
     type: DataTypes.DECIMAL(12, 4),
     allowNull: false,
   },
+  takeProfit: {
+    type: DataTypes.DECIMAL(12, 4),
+    allowNull: true,
+  },
+  stopLoss: {
+    type: DataTypes.DECIMAL(12, 4),
+    allowNull: true,
+  },
   profit: {
     type: DataTypes.DECIMAL(12, 2),
     defaultValue: 0.00,

@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Check, X } from 'lucide-react';
 
 const AdminPanel = () => {
-  const { adminRecords, setAdminRecords, updateUserRole, approveWithdrawal, user: currentUser, feedbacks, setFeedbacks, supportChats, replySupportMessage } = useAppContext();
+  const { adminRecords, setAdminRecords, updateUserRole, processTransactionRequest, user: currentUser, feedbacks, setFeedbacks, supportChats, replySupportMessage } = useAppContext();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('trades'); // 'requests', 'users', 'trades', 'feedback', 'support'
   const [replyInputs, setReplyInputs] = useState({});
@@ -44,54 +44,10 @@ const AdminPanel = () => {
     }));
   };
 
-  const handleTransactionRequest = (userId, transactionIndex, action) => {
-    setAdminRecords(prev => prev.map(record => {
-      if (record.id !== userId) return record;
-      
-      const newTransactions = [...record.transactions];
-      const tx = newTransactions[transactionIndex];
-      tx.status = action === 'APPROVE' ? 'APPROVED' : 'REJECTED';
-      
-      // If this is a withdrawal approval, ensure the withdrawal is marked approved via context function.
-      if (tx.type === 'WITHDRAWAL' && action === 'APPROVE') {
-        // Call approveWithdrawal to keep context state consistent.
-        approveWithdrawal(userId, transactionIndex);
-      }
-      
-      let newBalance = record.balance;
-      let challengeData = record.challengeData;
-      let tradeChallengeData = record.tradeChallengeData;
-
-      if (tx.type === 'DEPOSIT' && action === 'APPROVE') {
-        newBalance += tx.amount;
-      }
-      if (tx.type === 'WITHDRAWAL' && action === 'REJECTED') {
-        newBalance += tx.amount;
-      }
-      if (tx.type === 'CHALLENGE_REWARD' && action === 'APPROVE') {
-        newBalance += tx.amount;
-        if (tx.challengeType === '60_TRADE' && tradeChallengeData) {
-          tradeChallengeData = { ...tradeChallengeData, rewardStatus: 'APPROVED' };
-        } else if (challengeData && tx.challengeType === challengeData.type) {
-          challengeData = { ...challengeData, rewardStatus: 'APPROVED' };
-        }
-      }
-      if (tx.type === 'CHALLENGE_REWARD' && action === 'REJECT') {
-        if (tx.challengeType === '60_TRADE' && tradeChallengeData) {
-          tradeChallengeData = { ...tradeChallengeData, rewardStatus: 'REJECTED' };
-        } else if (challengeData && tx.challengeType === challengeData.type) {
-          challengeData = { ...challengeData, rewardStatus: 'REJECTED' };
-        }
-      }
-
-      return {
-        ...record,
-        transactions: newTransactions,
-        balance: newBalance,
-        ...(challengeData ? { challengeData } : {}),
-        ...(tradeChallengeData ? { tradeChallengeData } : {})
-      };
-    }));
+  const handleTransactionRequest = (userId, transactionId, action) => {
+    // Process the request through the backend
+    processTransactionRequest(userId, transactionId, action);
+    // The context will call loadUserData() internally to seamlessly update the frontend state
   };
 
   const renderRequests = () => {
@@ -108,7 +64,7 @@ const AdminPanel = () => {
                 if (saved) verificationData = JSON.parse(saved);
               } catch(e) { /* ignore */ }
             }
-            requests.push({ userId: record.id, username: record.username, tx, idx, verification: verificationData });
+            requests.push({ userId: record.id, username: record.username, tx, txId: tx.id, verification: verificationData });
           }
         });
       }
@@ -176,8 +132,8 @@ const AdminPanel = () => {
               <td>
                 {req.tx.status === 'PENDING' && (
                   <div style={{ display: 'flex', gap: '8px' }}>
-                    <button onClick={() => handleTransactionRequest(req.userId, req.idx, 'APPROVE')} className="btn" style={{ padding: '5px 10px', background: 'var(--buy-color)', color: '#fff' }}><Check size={14}/></button>
-                    <button onClick={() => handleTransactionRequest(req.userId, req.idx, 'REJECT')} className="btn" style={{ padding: '5px 10px', background: 'var(--sell-color)', color: '#fff' }}><X size={14}/></button>
+                    <button onClick={() => handleTransactionRequest(req.userId, req.txId, 'APPROVE')} className="btn" style={{ padding: '5px 10px', background: 'var(--buy-color)', color: '#fff' }}><Check size={14}/></button>
+                    <button onClick={() => handleTransactionRequest(req.userId, req.txId, 'REJECT')} className="btn" style={{ padding: '5px 10px', background: 'var(--sell-color)', color: '#fff' }}><X size={14}/></button>
                   </div>
                 )}
               </td>
@@ -284,7 +240,7 @@ const AdminPanel = () => {
               <td>{new Date(t.trade.date).toLocaleString()}</td>
               <td>{t.username}</td>
               <td style={{ color: t.trade.type === 'BUY' ? 'var(--buy-color)' : 'var(--sell-color)', fontWeight: 'bold' }}>{t.trade.type}</td>
-              <td>{t.trade.entryPrice.toFixed(2)}</td>
+              <td>{Number(t.trade.price || 0).toFixed(2)}</td>
               <td>{t.trade.status}</td>
               <td style={{ color: t.trade.profit > 0 ? 'var(--buy-color)' : 'inherit' }}>
                 {t.trade.profit !== undefined ? `+${t.trade.profit} Rs` : '-'}
