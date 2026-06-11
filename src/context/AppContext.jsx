@@ -16,6 +16,10 @@ export const AppProvider = ({ children }) => {
   });
   const [verification, setVerification] = useState(null);
 
+  // Global Market State
+  const [livePrice, setLivePrice] = useState(0);
+  const [priceChange, setPriceChange] = useState('up');
+
   // Admin Records synced from DB for administrators
   const [adminRecords, setAdminRecords] = useState([]);
 
@@ -46,6 +50,48 @@ export const AppProvider = ({ children }) => {
       sessionStorage.removeItem('currentUser');
     }
   }, [user]);
+
+  // Global WebSocket for Live Price
+  useEffect(() => {
+    const ws = new WebSocket('wss://stream.binance.com:9443/ws/paxgusdt@ticker');
+    
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      const newPrice = parseFloat(data.c);
+      setLivePrice(prev => {
+        setPriceChange(newPrice >= prev ? 'up' : 'down');
+        return newPrice;
+      });
+    };
+
+    return () => ws.close();
+  }, []);
+
+  // Global Trade Monitoring Logic
+  useEffect(() => {
+    if (livePrice === 0) return;
+    if (!trades || trades.length === 0) return;
+    
+    trades.forEach(trade => {
+      if (trade.status !== 'OPEN') return;
+      
+      if (trade.type === 'BUY') {
+        if (trade.takeProfit && livePrice >= trade.takeProfit) {
+          const reward = trade.price > 0 ? 140 : 80;
+          completeTrade(trade.id, reward); // TP hit
+        } else if (trade.stopLoss && livePrice <= trade.stopLoss) {
+          completeTrade(trade.id, 0); // SL hit (no reward)
+        }
+      } else if (trade.type === 'SELL') {
+        if (trade.takeProfit && livePrice <= trade.takeProfit) {
+          const reward = trade.price > 0 ? 140 : 80;
+          completeTrade(trade.id, reward); // TP hit
+        } else if (trade.stopLoss && livePrice >= trade.stopLoss) {
+          completeTrade(trade.id, 0); // SL hit
+        }
+      }
+    });
+  }, [livePrice, trades]);
 
   // Helper to fetch authorization header
   const getAuthHeaders = () => {
@@ -466,7 +512,9 @@ export const AppProvider = ({ children }) => {
     updateProfileDetails,
     verification,
     updateVerification,
-    processTransactionRequest
+    processTransactionRequest,
+    livePrice,
+    priceChange
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

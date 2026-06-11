@@ -24,11 +24,8 @@ const RulesModal = ({ onClose }) => (
 
 
 const TradingPlatform = () => {
-  const { user, logout, balance, trades, addTrade, completeTrade, accountType, setAccountType } = useAppContext();
+  const { user, logout, balance, trades, addTrade, completeTrade, accountType, setAccountType, livePrice, priceChange } = useAppContext();
   const navigate = useNavigate();
-  
-  const [livePrice, setLivePrice] = useState(0);
-  const [priceChange, setPriceChange] = useState('up');
   
   const [showRules, setShowRules] = useState(false);
   const [toast, setToast] = useState(null);
@@ -43,58 +40,7 @@ const TradingPlatform = () => {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, []);
 
-  // Binance WebSocket for Live Price
-  useEffect(() => {
-    // Note: XAUUSDT is not available on standard Binance futures/spot in all regions,
-    // PAXGUSDT (Pax Gold) is a good proxy for gold.
-    const ws = new WebSocket('wss://stream.binance.com:9443/ws/paxgusdt@ticker');
-    
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      const newPrice = parseFloat(data.c);
-      setLivePrice(prev => {
-        setPriceChange(newPrice >= prev ? 'up' : 'down');
-        return newPrice;
-      });
-    };
-
-    return () => ws.close();
-  }, []);
-
-  // Removed time window logic
-
-  // Trade Monitoring Logic
-  useEffect(() => {
-    if (livePrice === 0) return;
-    
-    trades.forEach(trade => {
-      if (trade.status !== 'OPEN') return;
-      
-      if (trade.type === 'BUY') {
-        if (trade.takeProfit && livePrice >= trade.takeProfit) {
-          const reward = trade.price > 0 ? 140 : 80;
-          completeTrade(trade.id, reward); // TP hit
-          setToast({ message: `Achieved a TP and added ${reward} Rs!`, type: 'success' });
-          setTimeout(() => setToast(null), 4000);
-        } else if (trade.stopLoss && livePrice <= trade.stopLoss) {
-          completeTrade(trade.id, 0); // SL hit (no reward)
-          setToast({ message: "You lost the trade for trade price of 80 Rs bid amount.", type: 'error' });
-          setTimeout(() => setToast(null), 4000);
-        }
-      } else if (trade.type === 'SELL') {
-        if (trade.takeProfit && livePrice <= trade.takeProfit) {
-          const reward = trade.price > 0 ? 140 : 80;
-          completeTrade(trade.id, reward); // TP hit
-          setToast({ message: `Achieved a TP and added ${reward} Rs!`, type: 'success' });
-          setTimeout(() => setToast(null), 4000);
-        } else if (trade.stopLoss && livePrice >= trade.stopLoss) {
-          completeTrade(trade.id, 0); // SL hit
-          setToast({ message: "You lost the trade for trade price of 80 Rs bid amount.", type: 'error' });
-          setTimeout(() => setToast(null), 4000);
-        }
-      }
-    });
-  }, [livePrice, trades]);
+  // Global WebSocket and Trade Monitoring moved to AppContext
 
   const handleOrder = async (type) => {
     if (isProcessingOrder) return;

@@ -4,27 +4,8 @@ import MobileNavBar from './MobileNavBar';
 import { Clock, TrendingUp, ArrowUpRight, ArrowDownRight, CheckCircle, AlertCircle } from 'lucide-react';
 
 const HistoryScreen = () => {
-  const { trades, completeTrade, balance, livePrice = 0 } = useAppContext();
+  const { trades, livePrice, priceChange } = useAppContext();
   const [activeSubTab, setActiveSubTab] = useState('active'); // 'active' or 'settled'
-
-  // Since live price is fetched on Home via Binance WS, let's simulate or fetch live price here too if needed,
-  // or grab the latest closed prices. Let's create a simple Binance WS connection here as well to make it
-  // dynamic and accurate in real-time!
-  const [currentLivePrice, setCurrentLivePrice] = useState(livePrice || 2300);
-  const [priceChange, setPriceChange] = useState('up');
-
-  React.useEffect(() => {
-    const ws = new WebSocket('wss://stream.binance.com:9443/ws/paxgusdt@ticker');
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      const newPrice = parseFloat(data.c);
-      setCurrentLivePrice(prev => {
-        setPriceChange(newPrice >= prev ? 'up' : 'down');
-        return newPrice;
-      });
-    };
-    return () => ws.close();
-  }, []);
 
 
   const openTrades = trades.filter(t => t.status === 'OPEN');
@@ -71,7 +52,7 @@ const HistoryScreen = () => {
               fontSize: '15px', 
               color: priceChange === 'up' ? 'var(--buy-color)' : 'var(--sell-color)' 
             }}>
-              ${currentLivePrice ? currentLivePrice.toFixed(2) : 'Loading...'}
+              ${livePrice ? livePrice.toFixed(2) : 'Loading...'}
             </span>
             {priceChange === 'up' ? <ArrowUpRight size={16} color="var(--buy-color)" /> : <ArrowDownRight size={16} color="var(--sell-color)" />}
           </div>
