@@ -76,7 +76,7 @@ const Auth = () => {
       return;
     }
 
-    const res = await login(signInInput.trim(), signInPassword);
+    const res = await login(signInInput.trim(), signInPassword.trim());
     if (res.success) {
       setSuccess('Logged in successfully! Redirecting...');
       setTimeout(() => navigate('/'), 1200);
@@ -109,10 +109,10 @@ const Auth = () => {
       username: signUpUsername,
       fullName: signUpFullName,
       email: signUpEmail,
-      mobileNumber: signUpMobileNumber,
-      password: signUpPassword,
+      mobileNumber: signUpMobileNumber.trim(),
+      password: signUpPassword.trim(),
       securityQuestion: signUpQuestion,
-      securityAnswer: signUpAnswer
+      securityAnswer: signUpAnswer.trim()
     });
 
     if (res.success) {
