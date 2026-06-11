@@ -343,6 +343,9 @@ export const AppProvider = ({ children }) => {
 
   // Add Opened Trade to database
   const addTrade = async (tradeDetails) => {
+    const cost = 80 * (tradeDetails.amount || 1);
+    setBalance(prev => prev - cost); // Optimistic UI update
+
     try {
       const res = await fetch(`${API_URL}/api/trades/add`, {
         method: 'POST',
@@ -352,9 +355,12 @@ export const AppProvider = ({ children }) => {
       const data = await res.json();
       if (data.success) {
         await loadUserData();
+      } else {
+        setBalance(prev => prev + cost); // Rollback on fail
       }
     } catch (err) {
       console.error('Failed to register trade creation:', err);
+      setBalance(prev => prev + cost); // Rollback on fail
     }
   };
 

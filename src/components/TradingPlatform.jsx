@@ -35,6 +35,7 @@ const TradingPlatform = () => {
   
   const [quantity, setQuantity] = useState(1);
   const [showDeposit, setShowDeposit] = useState(false);
+  const [isProcessingOrder, setIsProcessingOrder] = useState(false);
   const isWeekend = [0,6].includes(new Date().getDay());
 
   // Scroll to top on mount to ensure the top part of the screen is always displayed
@@ -95,7 +96,9 @@ const TradingPlatform = () => {
     });
   }, [livePrice, trades]);
 
-  const handleOrder = (type) => {
+  const handleOrder = async (type) => {
+    if (isProcessingOrder) return;
+    
     if (isWeekend) {
       alert("Market is closed on weekends. Trades cannot be placed.");
       return;
@@ -103,8 +106,8 @@ const TradingPlatform = () => {
 
     if (quantity <= 0) return;
 
-    if (balance < 80) {
-      alert("Insufficient balance. You need at least 80 Rs to place an order.");
+    if (balance < (80 * quantity)) {
+      alert(`Insufficient balance. You need at least ${80 * quantity} Rs to place an order of ${quantity} lots.`);
       return;
     }
 
@@ -113,11 +116,13 @@ const TradingPlatform = () => {
       return;
     }
 
+    setIsProcessingOrder(true);
+
     const pipValue = 1.0; 
     const tpDistance = 5 * pipValue;
     const slDistance = 1 * pipValue;
 
-    addTrade({
+    await addTrade({
       pair: 'PAXG/USDT',
       type,
       amount: quantity,
@@ -129,6 +134,7 @@ const TradingPlatform = () => {
     
     setToast({ message: `Order of ${quantity} placed at ${livePrice.toFixed(2)}`, type: 'success' });
     setTimeout(() => setToast(null), 4000);
+    setIsProcessingOrder(false);
   };
 
 
@@ -307,8 +313,22 @@ const TradingPlatform = () => {
               Profit on TP: 140 Rs
             </div>
             <div className="trade-buttons">
-              <button className="btn btn-buy" onClick={() => handleOrder('BUY')}>BUY</button>
-              <button className="btn btn-sell" onClick={() => handleOrder('SELL')}>SELL</button>
+              <button 
+                className="btn btn-buy" 
+                onClick={() => handleOrder('BUY')}
+                disabled={isProcessingOrder}
+                style={{ opacity: isProcessingOrder ? 0.5 : 1 }}
+              >
+                {isProcessingOrder ? 'PROCESSING...' : 'BUY'}
+              </button>
+              <button 
+                className="btn btn-sell" 
+                onClick={() => handleOrder('SELL')}
+                disabled={isProcessingOrder}
+                style={{ opacity: isProcessingOrder ? 0.5 : 1 }}
+              >
+                {isProcessingOrder ? 'PROCESSING...' : 'SELL'}
+              </button>
             </div>
           </div>
         </div>
