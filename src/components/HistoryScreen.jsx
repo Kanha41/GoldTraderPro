@@ -1,14 +1,19 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../context/useAppContext';
 import MobileNavBar from './MobileNavBar';
-import { Clock, TrendingUp, ArrowUpRight, ArrowDownRight, CheckCircle, AlertCircle } from 'lucide-react';
+import { Clock, TrendingUp, ArrowUpRight, ArrowDownRight, CheckCircle } from 'lucide-react';
+
+// Safe number parser — handles DB strings, nulls, undefined
+const n = (val, fallback = 0) => {
+  const parsed = parseFloat(val);
+  return isNaN(parsed) ? fallback : parsed;
+};
 
 const HistoryScreen = () => {
-  const { trades, livePrice, priceChange } = useAppContext();
+  const { trades = [], livePrice, priceChange } = useAppContext();
   const [activeSubTab, setActiveSubTab] = useState('active'); // 'active' or 'settled'
 
-
-  const openTrades = trades.filter(t => t.status === 'OPEN');
+  const openTrades   = trades.filter(t => t.status === 'OPEN');
   const settledTrades = trades.filter(t => t.status === 'CLOSED');
 
   return (
@@ -23,19 +28,14 @@ const HistoryScreen = () => {
       alignItems: 'center'
     }}>
       <div style={{ maxWidth: '480px', width: '100%' }}>
-        
+
         {/* --- Header Section --- */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '24px', textAlign: 'center' }}>
           <div style={{
-            width: '60px',
-            height: '60px',
-            borderRadius: '16px',
+            width: '60px', height: '60px', borderRadius: '16px',
             background: 'linear-gradient(135deg, #a78bfa, #6366f1)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 0 20px rgba(167, 139, 250, 0.25)',
-            marginBottom: '15px'
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 0 20px rgba(167, 139, 250, 0.25)', marginBottom: '15px'
           }}>
             <Clock size={32} color="#000" />
           </div>
@@ -47,60 +47,37 @@ const HistoryScreen = () => {
         <div className="glass-panel" style={{ padding: '12px 18px', borderRadius: '12px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)' }}>
           <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>PAXG/USDT Proxy</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ 
-              fontWeight: '700', 
-              fontSize: '15px', 
-              color: priceChange === 'up' ? 'var(--buy-color)' : 'var(--sell-color)' 
-            }}>
-              ${livePrice ? livePrice.toFixed(2) : 'Loading...'}
+            <span style={{ fontWeight: '700', fontSize: '15px', color: priceChange === 'up' ? 'var(--buy-color)' : 'var(--sell-color)' }}>
+              ${livePrice ? n(livePrice).toFixed(2) : 'Loading...'}
             </span>
-            {priceChange === 'up' ? <ArrowUpRight size={16} color="var(--buy-color)" /> : <ArrowDownRight size={16} color="var(--sell-color)" />}
+            {priceChange === 'up'
+              ? <ArrowUpRight size={16} color="var(--buy-color)" />
+              : <ArrowDownRight size={16} color="var(--sell-color)" />}
           </div>
         </div>
 
         {/* --- Sub-Tab Switcher --- */}
-        <div style={{ 
-          display: 'flex', 
-          background: 'rgba(0,0,0,0.4)', 
-          border: '1px solid var(--panel-border)', 
-          padding: '4px', 
-          borderRadius: '10px', 
-          marginBottom: '20px' 
-        }}>
-          <button 
+        <div style={{ display: 'flex', background: 'rgba(0,0,0,0.4)', border: '1px solid var(--panel-border)', padding: '4px', borderRadius: '10px', marginBottom: '20px' }}>
+          <button
             onClick={() => setActiveSubTab('active')}
             style={{
-              flex: 1,
-              padding: '10px',
-              borderRadius: '8px',
+              flex: 1, padding: '10px', borderRadius: '8px',
               background: activeSubTab === 'active' ? 'var(--panel-bg)' : 'transparent',
               border: activeSubTab === 'active' ? '1px solid var(--panel-border)' : 'none',
               color: activeSubTab === 'active' ? 'var(--accent)' : 'var(--text-secondary)',
-              fontSize: '13px',
-              fontWeight: '600',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '6px'
+              fontSize: '13px', fontWeight: '600', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
             }}
           >
             Active Trades ({openTrades.length})
           </button>
-          <button 
+          <button
             onClick={() => setActiveSubTab('settled')}
             style={{
-              flex: 1,
-              padding: '10px',
-              borderRadius: '8px',
+              flex: 1, padding: '10px', borderRadius: '8px',
               background: activeSubTab === 'settled' ? 'var(--panel-bg)' : 'transparent',
               border: activeSubTab === 'settled' ? '1px solid var(--panel-border)' : 'none',
               color: activeSubTab === 'settled' ? 'var(--accent)' : 'var(--text-secondary)',
-              fontSize: '13px',
-              fontWeight: '600',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '6px'
+              fontSize: '13px', fontWeight: '600', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
             }}
           >
             Settle History ({settledTrades.length})
@@ -118,41 +95,63 @@ const HistoryScreen = () => {
               </div>
             ) : (
               openTrades.map(trade => (
-                <div 
-                  key={trade.id} 
-                  className="glass-panel" 
-                  style={{ 
-                    padding: '16px', 
-                    display: 'flex', 
-                    flexDirection: 'column', 
-                    gap: '12px',
+                <div
+                  key={trade.id}
+                  className="glass-panel"
+                  style={{
+                    padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px',
                     borderLeft: trade.type === 'BUY' ? '4px solid var(--buy-color)' : '4px solid var(--sell-color)'
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <span style={{ 
+                      <span style={{
                         background: trade.type === 'BUY' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
                         color: trade.type === 'BUY' ? 'var(--buy-color)' : 'var(--sell-color)',
-                        padding: '4px 10px',
-                        borderRadius: '6px',
-                        fontWeight: '700',
-                        fontSize: '12px'
+                        padding: '4px 10px', borderRadius: '6px', fontWeight: '700', fontSize: '12px'
                       }}>
                         {trade.type}
                       </span>
-                      <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Qty: {Number(trade.amount || 0)} Lots</span>
+                      <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Qty: {n(trade.amount, 1)} Lots</span>
                     </div>
-                    <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                      Entry: ${Number(trade.price || 0).toFixed(2)}
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Entry: ${n(trade.price).toFixed(2)}</div>
+                      <div style={{ fontSize: '10px', color: 'var(--text-secondary)', opacity: 0.7 }}>
+                        {trade.date ? new Date(trade.date).toLocaleString([], { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{
+                    display: 'flex', justifyContent: 'space-between', fontSize: '12px',
+                    color: 'var(--text-secondary)', background: 'rgba(0,0,0,0.2)',
+                    padding: '8px 12px', borderRadius: '6px'
+                  }}>
+                    <span style={{ color: 'rgba(16,185,129,0.8)' }}>
+                      TP: ${n(trade.takeProfit).toFixed(2)}
+                    </span>
+                    <span style={{ color: 'var(--text-secondary)', opacity: 0.6 }}>|</span>
+                    <span style={{ color: 'rgba(239,68,68,0.8)' }}>
+                      SL: ${n(trade.stopLoss).toFixed(2)}
                     </span>
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--text-secondary)', background: 'rgba(0,0,0,0.2)', padding: '8px 12px', borderRadius: '6px' }}>
-                    <span>Target Profit: ${(trade.takeProfit || 0).toFixed(2)}</span>
-                    <span>Stop Loss: ${(trade.stopLoss || 0).toFixed(2)}</span>
-                  </div>
-
+                  {/* Live P&L indicator */}
+                  {livePrice > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Live P&L</span>
+                      {(() => {
+                        const entry = n(trade.price);
+                        const diff = trade.type === 'BUY' ? livePrice - entry : entry - livePrice;
+                        const isProfit = diff >= 0;
+                        return (
+                          <span style={{ fontSize: '13px', fontWeight: '700', color: isProfit ? 'var(--buy-color)' : 'var(--sell-color)' }}>
+                            {isProfit ? '+' : ''}{diff.toFixed(2)} pts
+                          </span>
+                        );
+                      })()}
+                    </div>
+                  )}
                 </div>
               ))
             )}
@@ -167,41 +166,40 @@ const HistoryScreen = () => {
               </div>
             ) : (
               settledTrades.map(trade => {
-                const profitAmount = trade.profit || 0;
+                const profitAmount = n(trade.profit);
                 const isWin = profitAmount > 0;
                 return (
-                  <div 
-                    key={trade.id} 
-                    className="glass-panel" 
-                    style={{ 
-                      padding: '14px 18px', 
-                      display: 'flex', 
-                      justifyContent: 'space-between', 
-                      alignItems: 'center',
+                  <div
+                    key={trade.id}
+                    className="glass-panel"
+                    style={{
+                      padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                       borderLeft: isWin ? '4px solid var(--buy-color)' : '4px solid var(--sell-color)'
                     }}
                   >
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <strong style={{ color: trade.type === 'BUY' ? 'var(--buy-color)' : 'var(--sell-color)', fontSize: '14px' }}>{trade.type}</strong>
-                        <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Qty: {Number(trade.amount || 0)}</span>
+                        <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Qty: {n(trade.amount, 1)}</span>
+                        <span style={{
+                          fontSize: '10px', padding: '2px 6px', borderRadius: '4px',
+                          background: isWin ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
+                          color: isWin ? 'var(--buy-color)' : 'var(--sell-color)'
+                        }}>
+                          {isWin ? 'TP HIT' : 'SL HIT'}
+                        </span>
                       </div>
                       <small style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                        Entry: ${Number(trade.price || 0).toFixed(2)}
+                        Entry: ${n(trade.price).toFixed(2)} &nbsp;|&nbsp; TP: ${n(trade.takeProfit).toFixed(2)} &nbsp;|&nbsp; SL: ${n(trade.stopLoss).toFixed(2)}
                       </small>
                     </div>
 
                     <div style={{ textAlign: 'right' }}>
-                      <span style={{ 
-                        color: isWin ? 'var(--buy-color)' : 'var(--sell-color)', 
-                        fontWeight: '700',
-                        fontSize: '15px',
-                        display: 'block'
-                      }}>
+                      <span style={{ color: isWin ? 'var(--buy-color)' : 'var(--sell-color)', fontWeight: '700', fontSize: '15px', display: 'block' }}>
                         {isWin ? `+₹${profitAmount}` : '₹0.00'}
                       </span>
                       <small style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>
-                        {new Date(trade.date || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        {new Date(trade.date || Date.now()).toLocaleString([], { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                       </small>
                     </div>
                   </div>
