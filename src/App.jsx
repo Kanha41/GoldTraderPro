@@ -64,8 +64,9 @@ const MainApp = () => {
             <AdminPanel />
           </AdminRoute>
         } />
-                <Route path="/deposit-qr" element={<DepositQR />} />
-          <Route path="/deposit-success" element={<DepositSuccess />} />
+                <Route path="/home" element={<Navigate to="/" replace />} />
+        <Route path="/deposit-qr" element={<DepositQR />} />
+        <Route path="/deposit-success" element={<DepositSuccess />} />
     </Routes>
     </Router>
   );
