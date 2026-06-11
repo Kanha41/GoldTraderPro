@@ -5,7 +5,7 @@ const DATABASE_URL = process.env.DATABASE_URL || 'postgres://postgres:postgres@l
 const sequelize = new Sequelize(DATABASE_URL, {
   dialect: 'postgres',
   logging: false, // Set to console.log to debug database queries in SQL
-  dialectOptions: process.env.NODE_ENV === 'production' ? {
+  dialectOptions: DATABASE_URL.includes('neon.tech') || process.env.NODE_ENV === 'production' ? {
     ssl: {
       require: true,
       rejectUnauthorized: false
