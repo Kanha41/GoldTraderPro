@@ -5,16 +5,127 @@ import { Clock, TrendingUp, ArrowUpRight, ArrowDownRight, CheckCircle } from 'lu
 
 // Safe number parser — handles DB strings, nulls, undefined
 const n = (val, fallback = 0) => {
+  if (val === null || val === undefined) return fallback;
   const parsed = parseFloat(val);
   return isNaN(parsed) ? fallback : parsed;
+};
+
+// Safe date formatter — prevents crash on invalid dates
+const formatDate = (dateVal, options) => {
+  if (!dateVal) return '';
+  try {
+    const d = new Date(dateVal);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleString([], options || { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+  } catch {
+    return '';
+  }
+};
+
+// Safe single-trade card to prevent one bad trade from crashing entire list
+const ActiveTradeCard = ({ trade }) => {
+  try {
+    return (
+      <div
+        className="glass-panel"
+        style={{
+          padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px',
+          borderLeft: trade.type === 'BUY' ? '4px solid var(--buy-color)' : '4px solid var(--sell-color)'
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{
+              background: trade.type === 'BUY' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+              color: trade.type === 'BUY' ? 'var(--buy-color)' : 'var(--sell-color)',
+              padding: '4px 10px', borderRadius: '6px', fontWeight: '700', fontSize: '12px'
+            }}>
+              {trade.type || 'N/A'}
+            </span>
+            <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Qty: {n(trade.amount, 1)} Lots</span>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Entry: ${n(trade.price).toFixed(2)}</div>
+            <div style={{ fontSize: '10px', color: 'var(--text-secondary)', opacity: 0.7 }}>
+              {formatDate(trade.date)}
+            </div>
+          </div>
+        </div>
+
+        <div style={{
+          display: 'flex', justifyContent: 'space-between', fontSize: '12px',
+          color: 'var(--text-secondary)', background: 'rgba(0,0,0,0.2)',
+          padding: '8px 12px', borderRadius: '6px'
+        }}>
+          <span style={{ color: 'rgba(16,185,129,0.8)' }}>
+            TP: ${n(trade.takeProfit).toFixed(2)}
+          </span>
+          <span style={{ color: 'var(--text-secondary)', opacity: 0.6 }}>|</span>
+          <span style={{ color: 'rgba(239,68,68,0.8)' }}>
+            SL: ${n(trade.stopLoss).toFixed(2)}
+          </span>
+        </div>
+      </div>
+    );
+  } catch (err) {
+    console.error('Error rendering active trade card:', err, trade);
+    return null;
+  }
+};
+
+const SettledTradeCard = ({ trade }) => {
+  try {
+    const profitAmount = n(trade.profit);
+    const isWin = profitAmount > 0;
+    return (
+      <div
+        className="glass-panel"
+        style={{
+          padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          borderLeft: isWin ? '4px solid var(--buy-color)' : '4px solid var(--sell-color)'
+        }}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <strong style={{ color: trade.type === 'BUY' ? 'var(--buy-color)' : 'var(--sell-color)', fontSize: '14px' }}>{trade.type || 'N/A'}</strong>
+            <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Qty: {n(trade.amount, 1)}</span>
+            <span style={{
+              fontSize: '10px', padding: '2px 6px', borderRadius: '4px',
+              background: isWin ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
+              color: isWin ? 'var(--buy-color)' : 'var(--sell-color)'
+            }}>
+              {isWin ? 'TP HIT' : 'SL HIT'}
+            </span>
+          </div>
+          <small style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+            Entry: ${n(trade.price).toFixed(2)} &nbsp;|&nbsp; TP: ${n(trade.takeProfit).toFixed(2)} &nbsp;|&nbsp; SL: ${n(trade.stopLoss).toFixed(2)}
+          </small>
+        </div>
+
+        <div style={{ textAlign: 'right' }}>
+          <span style={{ color: isWin ? 'var(--buy-color)' : 'var(--sell-color)', fontWeight: '700', fontSize: '15px', display: 'block' }}>
+            {isWin ? `+₹${profitAmount}` : '₹0.00'}
+          </span>
+          <small style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>
+            {formatDate(trade.date || Date.now())}
+          </small>
+        </div>
+      </div>
+    );
+  } catch (err) {
+    console.error('Error rendering settled trade card:', err, trade);
+    return null;
+  }
 };
 
 const HistoryScreen = () => {
   const { trades = [], livePrice, priceChange } = useAppContext();
   const [activeSubTab, setActiveSubTab] = useState('active'); // 'active' or 'settled'
 
-  const openTrades   = trades.filter(t => t.status === 'OPEN');
-  const settledTrades = trades.filter(t => t.status === 'CLOSED');
+  // Safely filter trades — guard against non-array or items without status
+  const safeTrades = Array.isArray(trades) ? trades : [];
+  const openTrades   = safeTrades.filter(t => t && t.status === 'OPEN');
+  const settledTrades = safeTrades.filter(t => t && t.status === 'CLOSED');
 
   return (
     <div style={{
@@ -95,64 +206,7 @@ const HistoryScreen = () => {
               </div>
             ) : (
               openTrades.map(trade => (
-                <div
-                  key={trade.id}
-                  className="glass-panel"
-                  style={{
-                    padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px',
-                    borderLeft: trade.type === 'BUY' ? '4px solid var(--buy-color)' : '4px solid var(--sell-color)'
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <span style={{
-                        background: trade.type === 'BUY' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                        color: trade.type === 'BUY' ? 'var(--buy-color)' : 'var(--sell-color)',
-                        padding: '4px 10px', borderRadius: '6px', fontWeight: '700', fontSize: '12px'
-                      }}>
-                        {trade.type}
-                      </span>
-                      <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Qty: {n(trade.amount, 1)} Lots</span>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Entry: ${n(trade.price).toFixed(2)}</div>
-                      <div style={{ fontSize: '10px', color: 'var(--text-secondary)', opacity: 0.7 }}>
-                        {trade.date ? new Date(trade.date).toLocaleString([], { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div style={{
-                    display: 'flex', justifyContent: 'space-between', fontSize: '12px',
-                    color: 'var(--text-secondary)', background: 'rgba(0,0,0,0.2)',
-                    padding: '8px 12px', borderRadius: '6px'
-                  }}>
-                    <span style={{ color: 'rgba(16,185,129,0.8)' }}>
-                      TP: ${n(trade.takeProfit).toFixed(2)}
-                    </span>
-                    <span style={{ color: 'var(--text-secondary)', opacity: 0.6 }}>|</span>
-                    <span style={{ color: 'rgba(239,68,68,0.8)' }}>
-                      SL: ${n(trade.stopLoss).toFixed(2)}
-                    </span>
-                  </div>
-
-                  {/* Live P&L indicator */}
-                  {livePrice > 0 && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Live P&L</span>
-                      {(() => {
-                        const entry = n(trade.price);
-                        const diff = trade.type === 'BUY' ? livePrice - entry : entry - livePrice;
-                        const isProfit = diff >= 0;
-                        return (
-                          <span style={{ fontSize: '13px', fontWeight: '700', color: isProfit ? 'var(--buy-color)' : 'var(--sell-color)' }}>
-                            {isProfit ? '+' : ''}{diff.toFixed(2)} pts
-                          </span>
-                        );
-                      })()}
-                    </div>
-                  )}
-                </div>
+                <ActiveTradeCard key={trade.id || Math.random()} trade={trade} />
               ))
             )}
           </div>
@@ -165,46 +219,9 @@ const HistoryScreen = () => {
                 <small style={{ fontSize: '11px', color: 'var(--text-secondary)', opacity: 0.7 }}>Your completed options settlements will be logged here.</small>
               </div>
             ) : (
-              settledTrades.map(trade => {
-                const profitAmount = n(trade.profit);
-                const isWin = profitAmount > 0;
-                return (
-                  <div
-                    key={trade.id}
-                    className="glass-panel"
-                    style={{
-                      padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                      borderLeft: isWin ? '4px solid var(--buy-color)' : '4px solid var(--sell-color)'
-                    }}
-                  >
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <strong style={{ color: trade.type === 'BUY' ? 'var(--buy-color)' : 'var(--sell-color)', fontSize: '14px' }}>{trade.type}</strong>
-                        <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Qty: {n(trade.amount, 1)}</span>
-                        <span style={{
-                          fontSize: '10px', padding: '2px 6px', borderRadius: '4px',
-                          background: isWin ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
-                          color: isWin ? 'var(--buy-color)' : 'var(--sell-color)'
-                        }}>
-                          {isWin ? 'TP HIT' : 'SL HIT'}
-                        </span>
-                      </div>
-                      <small style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                        Entry: ${n(trade.price).toFixed(2)} &nbsp;|&nbsp; TP: ${n(trade.takeProfit).toFixed(2)} &nbsp;|&nbsp; SL: ${n(trade.stopLoss).toFixed(2)}
-                      </small>
-                    </div>
-
-                    <div style={{ textAlign: 'right' }}>
-                      <span style={{ color: isWin ? 'var(--buy-color)' : 'var(--sell-color)', fontWeight: '700', fontSize: '15px', display: 'block' }}>
-                        {isWin ? `+₹${profitAmount}` : '₹0.00'}
-                      </span>
-                      <small style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>
-                        {new Date(trade.date || Date.now()).toLocaleString([], { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                      </small>
-                    </div>
-                  </div>
-                );
-              })
+              settledTrades.map(trade => (
+                <SettledTradeCard key={trade.id || Math.random()} trade={trade} />
+              ))
             )}
           </div>
         )}

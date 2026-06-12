@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { AppContext } from './appContextStore';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://goldtraderpro-production.up.railway.app';
@@ -67,6 +67,9 @@ export const AppProvider = ({ children }) => {
     return () => ws.close();
   }, []);
 
+  // Track trade IDs currently being completed to prevent duplicate calls
+  const completingTradesRef = useRef(new Set());
+
   // Global Trade Monitoring Logic
   useEffect(() => {
     if (livePrice === 0) return;
@@ -74,21 +77,38 @@ export const AppProvider = ({ children }) => {
     
     trades.forEach(trade => {
       if (trade.status !== 'OPEN') return;
+      // Skip if this trade is already being completed
+      if (completingTradesRef.current.has(trade.id)) return;
+
+      const tp = parseFloat(trade.takeProfit);
+      const sl = parseFloat(trade.stopLoss);
+      const entryPrice = parseFloat(trade.price);
+      let shouldComplete = false;
+      let reward = 0;
       
       if (trade.type === 'BUY') {
-        if (trade.takeProfit && livePrice >= trade.takeProfit) {
-          const reward = trade.price > 0 ? 140 : 80;
-          completeTrade(trade.id, reward); // TP hit
-        } else if (trade.stopLoss && livePrice <= trade.stopLoss) {
-          completeTrade(trade.id, 0); // SL hit (no reward)
+        if (!isNaN(tp) && tp > 0 && livePrice >= tp) {
+          reward = entryPrice > 0 ? 140 : 80;
+          shouldComplete = true;
+        } else if (!isNaN(sl) && sl > 0 && livePrice <= sl) {
+          reward = 0;
+          shouldComplete = true;
         }
       } else if (trade.type === 'SELL') {
-        if (trade.takeProfit && livePrice <= trade.takeProfit) {
-          const reward = trade.price > 0 ? 140 : 80;
-          completeTrade(trade.id, reward); // TP hit
-        } else if (trade.stopLoss && livePrice >= trade.stopLoss) {
-          completeTrade(trade.id, 0); // SL hit
+        if (!isNaN(tp) && tp > 0 && livePrice <= tp) {
+          reward = entryPrice > 0 ? 140 : 80;
+          shouldComplete = true;
+        } else if (!isNaN(sl) && sl > 0 && livePrice >= sl) {
+          reward = 0;
+          shouldComplete = true;
         }
+      }
+
+      if (shouldComplete) {
+        completingTradesRef.current.add(trade.id);
+        completeTrade(trade.id, reward).finally(() => {
+          completingTradesRef.current.delete(trade.id);
+        });
       }
     });
   }, [livePrice, trades]);
