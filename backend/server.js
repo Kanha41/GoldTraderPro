@@ -637,14 +637,44 @@ app.post('/api/trades/complete', authenticateToken, async (req, res) => {
         tradeChallengeData = await TradeChallengeData.create({ userId: userObj.id }, { transaction: t });
       }
 
+      const todayStr = new Date().toISOString().split('T')[0];
+      
+      // Reset tradesToday if it's a new day
+      if (challengeData.lastActiveDate !== todayStr) {
+        challengeData.tradesToday = 0;
+        challengeData.lastActiveDate = todayStr;
+      }
+
       if (profit > 0) {
         challengeData.tradesToday += 1;
         
-        // Calculate daily active metrics
-        const todayStr = new Date().toISOString().split('T')[0];
-        if (challengeData.lastActiveDate !== todayStr) {
+        const requiredTrades = challengeData.type === '7_DAY' ? 3 : 2;
+        const requiredDays = challengeData.type === '7_DAY' ? 7 : 30;
+        
+        // If daily requirement is met and this day hasn't been counted yet
+        if (challengeData.tradesToday >= requiredTrades && challengeData.lastCountedDate !== todayStr) {
           challengeData.qualifyingDays += 1;
-          challengeData.lastActiveDate = todayStr;
+          challengeData.lastCountedDate = todayStr;
+          
+          // Check if challenge is fully completed now
+          if (challengeData.qualifyingDays >= requiredDays && !challengeData.rewardSubmitted) {
+            challengeData.rewardSubmitted = true;
+            
+            const rewardAmount = challengeData.type === '7_DAY' ? 3100 : 10000;
+            const rewardLabel = challengeData.type === '7_DAY' ? '7-Day Challenge Prize' : '30-Day Challenge Prize';
+            
+            // Auto submit withdrawal request
+            await Transaction.create({
+              userId: userObj.id,
+              isDemo: false,
+              type: 'CHALLENGE_REWARD',
+              amount: rewardAmount,
+              status: 'PENDING',
+              date: new Date(),
+              label: `${rewardLabel} for ${userObj.username}`,
+              challengeType: challengeData.type
+            }, { transaction: t });
+          }
         }
       }
 

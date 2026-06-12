@@ -151,7 +151,7 @@ const Transaction = sequelize.define('Transaction', {
     type: DataTypes.STRING,
     allowNull: false,
     validate: {
-      isIn: [['DEPOSIT', 'WITHDRAWAL']],
+      isIn: [['DEPOSIT', 'WITHDRAWAL', 'CHALLENGE_REWARD']],
     }
   },
   amount: {
@@ -168,6 +168,14 @@ const Transaction = sequelize.define('Transaction', {
   date: {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW,
+  },
+  label: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  challengeType: {
+    type: DataTypes.STRING,
+    allowNull: true,
   }
 }, {
   timestamps: false,
@@ -233,6 +241,10 @@ const ChallengeData = sequelize.define('ChallengeData', {
     defaultValue: 0,
   },
   lastActiveDate: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  lastCountedDate: {
     type: DataTypes.STRING,
     allowNull: true,
   },
