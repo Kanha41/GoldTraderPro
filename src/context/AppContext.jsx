@@ -53,11 +53,11 @@ export const AppProvider = ({ children }) => {
 
   // Global WebSocket for Live Price
   useEffect(() => {
-    const ws = new WebSocket('wss://stream.binance.com:9443/ws/paxgusdt@ticker');
+    const ws = new WebSocket('wss://stream.binance.com:9443/ws/paxgusdt@trade');
     
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
-      const newPrice = parseFloat(data.c);
+      const newPrice = parseFloat(data.p);
       setLivePrice(prev => {
         setPriceChange(newPrice >= prev ? 'up' : 'down');
         return newPrice;
@@ -412,22 +412,35 @@ export const AppProvider = ({ children }) => {
     const cost = 80 * (tradeDetails.amount || 1);
     setBalance(prev => prev - cost); // Optimistic UI update
 
-    try {
-      const res = await fetch(`${API_URL}/api/trades/add`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({ tradeDetails, accountType })
-      });
-      const data = await res.json();
-      if (data.success) {
-        await loadUserData();
-      } else {
+    const tempId = 'temp-' + Date.now();
+    const optimisticTrade = {
+      ...tradeDetails,
+      id: tempId,
+      _id: tempId,
+      openTime: new Date().toISOString()
+    };
+    
+    setTrades(prev => [optimisticTrade, ...prev]);
+
+    fetch(`${API_URL}/api/trades/add`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ tradeDetails, accountType })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          loadUserData();
+        } else {
+          setBalance(prev => prev + cost); // Rollback on fail
+          setTrades(prev => prev.filter(t => t.id !== tempId && t._id !== tempId));
+        }
+      })
+      .catch(err => {
+        console.error('Failed to register trade creation:', err);
         setBalance(prev => prev + cost); // Rollback on fail
-      }
-    } catch (err) {
-      console.error('Failed to register trade creation:', err);
-      setBalance(prev => prev + cost); // Rollback on fail
-    }
+        setTrades(prev => prev.filter(t => t.id !== tempId && t._id !== tempId));
+      });
   };
 
   // Complete Opened Trade
