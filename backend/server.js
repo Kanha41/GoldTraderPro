@@ -573,6 +573,17 @@ app.post('/api/trades/add', authenticateToken, async (req, res) => {
       date: new Date()
     }, { transaction: t });
 
+    // Record trade entry transaction for accurate ledger
+    await Transaction.create({
+      userId: userObj.id,
+      isDemo: isDemo,
+      type: 'TRADE_ENTRY',
+      amount: cost,
+      status: 'APPROVED',
+      date: new Date()
+    }, { transaction: t });
+
+    await userObj.save({ transaction: t });
     await t.commit();
     const updatedUser = await getUserWithAssociations(userObj.id);
     res.json({ success: true, user: formatUserResponse(updatedUser) });
@@ -649,6 +660,19 @@ app.post('/api/trades/complete', authenticateToken, async (req, res) => {
     }
 
     await userObj.save({ transaction: t });
+
+    // Record trade profit transaction if won
+    if (profit > 0) {
+      await Transaction.create({
+        userId: userObj.id,
+        isDemo: isDemo,
+        type: 'TRADE_PROFIT',
+        amount: reward,
+        status: 'APPROVED',
+        date: new Date()
+      }, { transaction: t });
+    }
+
     await t.commit();
 
     const updatedUser = await getUserWithAssociations(userObj.id);
@@ -1061,8 +1085,8 @@ app.post('/api/admin/approve-transaction', authenticateToken, checkAdmin, async 
       transaction.status = 'APPROVED';
       await transaction.save({ transaction: t });
 
-      // If it is a real deposit, credit target user balance
-      if (transaction.type === 'DEPOSIT' && !transaction.isDemo) {
+      // If it is a real deposit or challenge reward, credit target user balance
+      if ((transaction.type === 'DEPOSIT' || transaction.type === 'CHALLENGE_REWARD') && !transaction.isDemo) {
         targetUser.balance = parseFloat(targetUser.balance) + parseFloat(transaction.amount);
         await targetUser.save({ transaction: t });
       }
