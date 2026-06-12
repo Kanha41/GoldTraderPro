@@ -720,7 +720,7 @@ app.post('/api/trades/complete', authenticateToken, async (req, res) => {
 
 // Deposit Request / Instant Demo Deposit
 app.post('/api/funds/deposit', authenticateToken, async (req, res) => {
-  const { amount, accountType } = req.body;
+  const { amount, accountType, utr } = req.body;
   const numAmount = parseFloat(amount);
 
   if (isNaN(numAmount) || numAmount <= 0) {
@@ -759,6 +759,7 @@ app.post('/api/funds/deposit', authenticateToken, async (req, res) => {
         type: 'DEPOSIT',
         amount: numAmount,
         status: 'PENDING',
+        label: utr ? `UTR: ${utr}` : null,
         date: new Date()
       }, { transaction: t });
 
@@ -949,7 +950,8 @@ app.post('/api/verify-payment', authenticateToken, async (req, res) => {
         return res.status(400).json({ success: false, message: 'Payment amount mismatch.' });
       }
     } else {
-      console.warn('⚠️ Standard Razorpay SDK bypassed for simulation checkout.');
+      await t.rollback();
+      return res.status(500).json({ success: false, message: 'Payment gateway configuration is missing on server.' });
     }
 
     // Credit real balance in database
@@ -994,7 +996,8 @@ app.post('/api/verify-qr-payment', authenticateToken, async (req, res) => {
         return res.status(400).json({ success: false, message: 'Payment amount mismatch.' });
       }
     } else {
-      console.warn('⚠️ Static QR Razorpay SDK bypassed for simulation checkout.');
+      await t.rollback();
+      return res.status(500).json({ success: false, message: 'Payment gateway configuration is missing on server.' });
     }
 
     // Credit real balance
