@@ -1,13 +1,12 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Newspaper, Trophy, TrendingUp, Clock, User, Home } from 'lucide-react';
+import { Trophy, TrendingUp, Clock, User, Home } from 'lucide-react';
 
 const MobileNavBar = ({ activeTab }) => {
   const navigate = useNavigate();
 
   const tabs = [
     { id: 'trade', label: 'Home', icon: Home, path: '/' },
-    { id: 'news', label: 'News', icon: Newspaper, path: '/news' },
     { id: 'challenge', label: 'Challenge', icon: Trophy, path: '/challenge' },
     { id: 'history', label: 'History', icon: Clock, path: '/history' },
     { id: 'me', label: 'Me', icon: User, path: '/profile' }
