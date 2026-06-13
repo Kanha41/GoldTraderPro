@@ -21,6 +21,7 @@ const Auth = () => {
   // --- Sign In Fields ---
   const [signInInput, setSignInInput] = useState(''); // Username or Email
   const [signInPassword, setSignInPassword] = useState('');
+  const [isSigningIn, setIsSigningIn] = useState(false);
 
   // --- Sign Up Fields ---
   const [signUpFullName, setSignUpFullName] = useState('');
@@ -76,10 +77,12 @@ const Auth = () => {
       return;
     }
 
+    setIsSigningIn(true);
     const res = await login(signInInput.trim(), signInPassword.trim());
+    setIsSigningIn(false);
+
     if (res.success) {
-      setSuccess('Logged in successfully! Redirecting...');
-      setTimeout(() => navigate('/'), 1200);
+      navigate('/');
     } else {
       setError(res.message);
     }
@@ -379,8 +382,8 @@ const Auth = () => {
               </div>
             </div>
 
-            <button type="submit" className="btn btn-primary" style={{ padding: '14px', fontSize: '16px', justifyContent: 'center', marginTop: '10px' }}>
-              <LogIn size={18} /> Sign In
+            <button type="submit" className="btn btn-primary" style={{ padding: '14px', fontSize: '16px', justifyContent: 'center', marginTop: '10px' }} disabled={isSigningIn}>
+              <LogIn size={18} /> {isSigningIn ? 'Fetching...' : 'Sign In'}
             </button>
 
             {/* Bottom Links */}
