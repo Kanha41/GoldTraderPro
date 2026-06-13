@@ -93,7 +93,7 @@ const ProfileDashboard = () => {
     }
   };
 
-  const handleSettingsSubmit = (e) => {
+  const handleSettingsSubmit = async (e) => {
     e.preventDefault();
     setSettingsError('');
     setSettingsSuccess('');
@@ -118,7 +118,7 @@ const ProfileDashboard = () => {
       }
     }
 
-    const res = updateProfileDetails({
+    const res = await updateProfileDetails({
       username: editUsername,
       email: editEmail,
       password: editPassword || undefined
@@ -130,7 +130,7 @@ const ProfileDashboard = () => {
         setShowSettingsModal(false);
       }, 1200);
     } else {
-      setSettingsError(res.message);
+      setSettingsError(res.message || 'Failed to update profile.');
     }
   };
 
