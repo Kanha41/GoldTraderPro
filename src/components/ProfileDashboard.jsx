@@ -51,6 +51,7 @@ const ProfileDashboard = () => {
   const [editConfirmPassword, setEditConfirmPassword] = useState('');
   const [settingsError, setSettingsError] = useState('');
   const [settingsSuccess, setSettingsSuccess] = useState('');
+  const [isSettingsUpdating, setIsSettingsUpdating] = useState(false);
 
   const currentUserRecord = adminRecords.find(r => r.id === user?.id);
 
@@ -97,44 +98,49 @@ const ProfileDashboard = () => {
     e.preventDefault();
     setSettingsError('');
     setSettingsSuccess('');
+    setIsSettingsUpdating(true);
 
-    if (!editUsername.trim()) {
-      setSettingsError('Username cannot be empty.');
-      return;
-    }
-    if (!editEmail.trim()) {
-      setSettingsError('Email address cannot be empty.');
-      return;
-    }
-
-    if (editPassword) {
-      if (editPassword.length < 6) {
-        setSettingsError('Password must be at least 6 characters long.');
+    try {
+      if (!editUsername.trim()) {
+        setSettingsError('Username cannot be empty.');
         return;
       }
-      if (editPassword !== editConfirmPassword) {
-        setSettingsError('Passwords do not match.');
+      if (!editEmail.trim()) {
+        setSettingsError('Email address cannot be empty.');
         return;
       }
-    }
 
-    const res = await updateProfileDetails({
-      username: editUsername,
-      email: editEmail,
-      password: editPassword || undefined
-    });
-
-    if (res.success) {
       if (editPassword) {
-        setSettingsSuccess('Password changed successfully!');
-      } else {
-        setSettingsSuccess('Profile updated successfully!');
+        if (editPassword.length < 6) {
+          setSettingsError('Password must be at least 6 characters long.');
+          return;
+        }
+        if (editPassword !== editConfirmPassword) {
+          setSettingsError('Passwords do not match.');
+          return;
+        }
       }
-      setTimeout(() => {
-        setShowSettingsModal(false);
-      }, 1200);
-    } else {
-      setSettingsError(res.message || 'Failed to update profile.');
+
+      const res = await updateProfileDetails({
+        username: editUsername,
+        email: editEmail,
+        password: editPassword || undefined
+      });
+
+      if (res.success) {
+        if (editPassword) {
+          setSettingsSuccess('Password changed successfully!');
+        } else {
+          setSettingsSuccess('Profile updated successfully!');
+        }
+        setTimeout(() => {
+          setShowSettingsModal(false);
+        }, 1200);
+      } else {
+        setSettingsError(res.message || 'Failed to update profile.');
+      }
+    } finally {
+      setIsSettingsUpdating(false);
     }
   };
 
@@ -825,8 +831,8 @@ const ProfileDashboard = () => {
                 </div>
               )}
 
-              <button type="submit" className="btn btn-primary" style={{ justifyContent: 'center', padding: '12px', marginTop: '8px' }}>
-                Save Profile Changes
+              <button type="submit" className="btn btn-primary" style={{ justifyContent: 'center', padding: '12px', marginTop: '8px' }} disabled={isSettingsUpdating}>
+                {isSettingsUpdating ? 'Updating...' : 'Save Profile Changes'}
               </button>
             </form>
           </div>
