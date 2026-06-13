@@ -105,7 +105,7 @@ const AdminPanel = () => {
                 </span>
               </td>
               <td>{req.username}</td>
-              <td>{req.tx.amount.toFixed(2)}</td>
+              <td>{Number(req.tx.amount || 0).toFixed(2)}</td>
               <td>
                 {req.tx.type === 'WITHDRAWAL' && req.verification ? (
                   <div style={{ fontSize: '12px', lineHeight: '1.6', color: '#a5f3fc' }}>
@@ -195,9 +195,9 @@ const AdminPanel = () => {
                       <option value="admin" style={{ background: '#111827' }}>Admin</option>
                     </select>
                   </td>
-                  <td>{u.balance.toFixed(2)}</td>
+                  <td>{Number(u.balance || 0).toFixed(2)}</td>
                   <td>{u.trades ? u.trades.length : 0}</td>
-                  <td>{totalDeposits.toFixed(2)}</td>
+                  <td>{Number(totalDeposits || 0).toFixed(2)}</td>
                 </tr>
               );
             })}
