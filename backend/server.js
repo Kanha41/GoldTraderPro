@@ -652,9 +652,10 @@ app.post('/api/trades/complete', authenticateToken, async (req, res) => {
       const requiredTrades = challengeData.type === '7_DAY' ? 3 : 2;
       const requiredDays = challengeData.type === '7_DAY' ? 7 : 30;
       
-      // If daily requirement is met and this day hasn't been counted yet
-      if (challengeData.tradesToday >= requiredTrades && challengeData.lastCountedDate !== todayStr) {
+      // If daily requirement is met, increment day and reset trade count
+      if (challengeData.tradesToday >= requiredTrades) {
         challengeData.qualifyingDays += 1;
+        challengeData.tradesToday = 0; // Reset for the next 'day' of progress
         challengeData.lastCountedDate = todayStr;
         
         // Check if challenge is fully completed now

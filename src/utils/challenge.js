@@ -81,11 +81,7 @@ export const creditQualifyingDay = (challengeData) => {
 
 export const isChallengeFullyComplete = (challengeData) => {
   const totalDays = getChallengeTotalDays(challengeData.type);
-  const requiredTrades = getRequiredTrades(challengeData.type);
-  return (
-    challengeData.completedDays >= totalDays &&
-    challengeData.tradesToday >= requiredTrades
-  );
+  return challengeData.completedDays >= totalDays;
 };
 
 export const hasChallengeRewardTransaction = (transactions, challengeType) =>
