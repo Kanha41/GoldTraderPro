@@ -42,6 +42,8 @@ export const normalizeChallengeData = (record) => {
   const completedDays =
     raw.completedDays !== undefined
       ? raw.completedDays
+      : raw.qualifyingDays !== undefined
+      ? raw.qualifyingDays
       : Math.max(0, (raw.currentDay || 1) - 1);
 
   return {
@@ -185,11 +187,18 @@ export const normalizeTradeChallengeData = (record) => {
   const successfulTrades =
     raw.successfulTrades !== undefined
       ? raw.successfulTrades
+      : raw.winningTrades !== undefined
+      ? raw.winningTrades
       : raw.completedTrades || 0;
+  const losingTrades = raw.losingTrades !== undefined 
+      ? raw.losingTrades 
+      : (raw.tradesCount && raw.winningTrades !== undefined) 
+      ? raw.tradesCount - raw.winningTrades 
+      : 0;
   return {
     enrolled: !!raw.enrolled,
     successfulTrades,
-    losingTrades: raw.losingTrades || 0,
+    losingTrades,
     targetTrades: raw.targetTrades || TRADE_CHALLENGE_TARGET,
     rewardSubmitted: raw.rewardSubmitted || false,
     rewardStatus: raw.rewardStatus || null,
