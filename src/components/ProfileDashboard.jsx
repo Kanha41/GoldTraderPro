@@ -125,7 +125,11 @@ const ProfileDashboard = () => {
     });
 
     if (res.success) {
-      setSettingsSuccess('Profile updated successfully!');
+      if (editPassword) {
+        setSettingsSuccess('Password changed successfully!');
+      } else {
+        setSettingsSuccess('Profile updated successfully!');
+      }
       setTimeout(() => {
         setShowSettingsModal(false);
       }, 1200);
