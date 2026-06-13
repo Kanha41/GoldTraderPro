@@ -46,7 +46,8 @@ const DepositQR = () => {
       });
       const data = await res.json();
       if (data.success) {
-        navigate('/deposit-success');
+        alert('Deposit request submitted! It is pending admin approval.');
+        navigate('/history');
       } else {
         setError(data.message || 'Deposit submission failed');
       }

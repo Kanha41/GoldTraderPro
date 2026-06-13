@@ -93,7 +93,6 @@ const DepositModal = ({ onClose }) => {
               });
               const data = await verifyRes.json();
               if (data.success) {
-                deposit(numericAmount);
                 alert('Deposit successful and verified!');
                 navigate('/deposit-success');
                 onClose();
