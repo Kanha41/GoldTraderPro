@@ -592,7 +592,7 @@ const ProfileDashboard = () => {
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
                               <span style={{ fontWeight: '700', fontSize: '14px', color: '#fff' }}>
-                                {display.sign} ₹{tx.amount.toFixed(2)}
+                                {display.sign} ₹{Number(tx.amount || 0).toFixed(2)}
                               </span>
                               <span className="status-badge status-pending" style={{ fontSize: '9px', padding: '1px 6px' }}>
                                 Waiting Approval
@@ -653,7 +653,7 @@ const ProfileDashboard = () => {
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
                               <span style={{ fontWeight: '700', fontSize: '14px', color: '#fff' }}>
-                                {display.sign} ₹{tx.amount.toFixed(2)}
+                                {display.sign} ₹{Number(tx.amount || 0).toFixed(2)}
                               </span>
                               <span className={`status-badge status-${tx.status.toLowerCase()}`} style={{ fontSize: '9px', padding: '1px 6px' }}>
                                 {tx.status}
