@@ -46,12 +46,18 @@ export const normalizeChallengeData = (record) => {
       ? raw.qualifyingDays
       : Math.max(0, (raw.currentDay || 1) - 1);
 
+  const requiredTrades = getRequiredTrades(type);
+  let tradesToday = raw.tradesToday || 0;
+  if (tradesToday > requiredTrades) {
+    tradesToday = 0;
+  }
+
   return {
     enrolled: !!raw.enrolled,
     type,
     completedDays,
     lastActiveDate: raw.lastActiveDate || getToday(),
-    tradesToday: raw.tradesToday || 0,
+    tradesToday,
     lastCountedDate: raw.lastCountedDate || null,
     rewardSubmitted: raw.rewardSubmitted || false,
     rewardStatus: raw.rewardStatus || null
