@@ -218,15 +218,13 @@ const TradingPlatform = () => {
       <div className="main-grid">
         {/* Left Side: Chart/Data */}
         <div className="chart-area" style={{ display: 'flex', flexDirection: 'column' }}>
-          <div className="glass-panel" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-            <h3 style={{ color: 'var(--text-secondary)', marginBottom: '10px', fontSize: '14px', textTransform: 'uppercase' }}>Live Gold Price (PAXG/USDT)</h3>
-            <div className="price-display" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-                <div className={`current-price ${priceChange === 'up' ? 'price-up' : 'price-down'}`}>
-                  {livePrice ? livePrice.toFixed(2) : 'Loading...'}
-                </div>
-                {priceChange === 'up' ? <ArrowUpRight size={32} color="var(--buy-color)" /> : <ArrowDownRight size={32} color="var(--sell-color)" />}
-              </div>
+          <div className="glass-panel" style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 16px', background: 'rgba(0,0,0,0.2)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+              <span style={{ fontSize: '18px', fontWeight: '800', color: priceChange === 'up' ? 'var(--buy-color)' : 'var(--sell-color)' }}>
+                {livePrice ? livePrice.toFixed(2) : 'Loading...'}
+              </span>
+              <h3 style={{ color: 'var(--text-secondary)', fontSize: '13px', textTransform: 'uppercase', margin: 0, fontWeight: '600' }}>Live Gold Price</h3>
+              {priceChange === 'up' ? <ArrowUpRight size={18} color="var(--buy-color)" /> : <ArrowDownRight size={18} color="var(--sell-color)" />}
             </div>
             
             <TradingViewChart />
