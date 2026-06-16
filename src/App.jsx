@@ -1,7 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import DepositQR from './components/DepositQR';
-import DepositSuccess from './components/DepositSuccess';
+
 
 import { AppProvider } from './context/AppContext';
 import { useAppContext } from './context/useAppContext';
@@ -65,8 +64,7 @@ const MainApp = () => {
           </AdminRoute>
         } />
         <Route path="/home" element={<Navigate to="/" replace />} />
-        <Route path="/deposit-qr" element={<DepositQR />} />
-        <Route path="/deposit-success" element={<DepositSuccess />} />
+
         <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
     </Router>
