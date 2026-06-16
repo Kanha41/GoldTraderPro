@@ -151,7 +151,7 @@ const Transaction = sequelize.define('Transaction', {
     type: DataTypes.STRING,
     allowNull: false,
     validate: {
-      isIn: [['DEPOSIT', 'WITHDRAWAL', 'CHALLENGE_REWARD']],
+      isIn: [['DEPOSIT', 'WITHDRAWAL', 'CHALLENGE_REWARD', 'TRADE_ENTRY']],
     }
   },
   amount: {

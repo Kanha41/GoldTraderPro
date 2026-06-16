@@ -831,7 +831,18 @@ const ProfileDashboard = () => {
                 </div>
               )}
 
-              <button type="submit" className="btn btn-primary" style={{ justifyContent: 'center', padding: '12px', marginTop: '8px' }} disabled={isSettingsUpdating}>
+              <button type="submit" className="btn btn-primary" style={{ justifyContent: 'center', padding: '12px', marginTop: '8px', cursor: isSettingsUpdating ? 'not-allowed' : 'pointer', opacity: isSettingsUpdating ? 0.7 : 1, transition: 'opacity 0.2s ease', display: 'flex', alignItems: 'center', gap: '8px' }} disabled={isSettingsUpdating}>
+                {isSettingsUpdating && (
+                  <span style={{
+                    display: 'inline-block',
+                    width: '16px',
+                    height: '16px',
+                    border: '2px solid rgba(255,255,255,0.3)',
+                    borderTopColor: '#fff',
+                    borderRadius: '50%',
+                    animation: 'spin 0.6s linear infinite'
+                  }} />
+                )}
                 {isSettingsUpdating ? 'Updating...' : 'Save Profile Changes'}
               </button>
             </form>
