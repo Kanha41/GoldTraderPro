@@ -23,6 +23,15 @@ export const AppProvider = ({ children }) => {
   // Admin Records synced from DB for administrators
   const [adminRecords, setAdminRecords] = useState([]);
 
+  const [guestId] = useState(() => {
+    let id = localStorage.getItem('guestId');
+    if (!id) {
+      id = 'guest_' + Date.now();
+      localStorage.setItem('guestId', id);
+    }
+    return id;
+  });
+
   // Feedbacks state stored in localStorage (can be migrated to DB as well)
   const [feedbacks, setFeedbacks] = useState(() => {
     const saved = localStorage.getItem('feedbacks');
@@ -290,10 +299,13 @@ export const AppProvider = ({ children }) => {
   };
 
   // Submit Support Chats
-  const sendSupportMessage = (text) => {
-    if (!user) return;
+  const sendSupportMessage = (text, isGuest = false) => {
+    const activeUserId = isGuest ? guestId : user?.id;
+    const activeUsername = isGuest ? `Guest (${guestId.slice(-4)})` : user?.username;
+
+    if (!activeUserId) return;
     setSupportChats(prev => {
-      const existingChatIndex = prev.findIndex(c => c.userId === user.id && c.status === 'OPEN');
+      const existingChatIndex = prev.findIndex(c => c.userId === activeUserId && c.status === 'OPEN');
       const newMessage = {
         id: Date.now(),
         sender: 'user',
@@ -312,8 +324,8 @@ export const AppProvider = ({ children }) => {
       } else {
         return [{
           id: Date.now(),
-          userId: user.id,
-          username: user.username,
+          userId: activeUserId,
+          username: activeUsername,
           status: 'OPEN',
           lastUpdated: new Date().toISOString(),
           messages: [newMessage]
@@ -342,10 +354,11 @@ export const AppProvider = ({ children }) => {
     }));
   };
 
-  const markSupportChatRead = () => {
-    if (!user) return;
+  const markSupportChatRead = (isGuest = false) => {
+    const activeUserId = isGuest ? guestId : user?.id;
+    if (!activeUserId) return;
     setSupportChats(prev => prev.map(chat => {
-      if (chat.userId === user.id && chat.unreadByUser) {
+      if (chat.userId === activeUserId && chat.unreadByUser) {
         return { ...chat, unreadByUser: false };
       }
       return chat;
@@ -564,6 +577,7 @@ export const AppProvider = ({ children }) => {
     processTransactionRequest,
     livePrice,
     priceChange,
+    guestId,
     refreshAdminData: loadUserData
   };
 

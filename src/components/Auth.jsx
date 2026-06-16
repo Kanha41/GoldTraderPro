@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/useAppContext';
-import { LogIn, UserPlus, ShieldCheck, Mail, User, Lock, ArrowLeft, KeyRound } from 'lucide-react';
+import { LogIn, UserPlus, ShieldCheck, Mail, User, Lock, ArrowLeft, KeyRound, MessageSquare, X, Send, Headset } from 'lucide-react';
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://goldtraderpro-production.up.railway.app';
 
@@ -10,8 +10,24 @@ const Auth = () => {
   const [mode, setMode] = useState('signin');
   
   // AppContext functions
-  const { login, signUp, resetPassword, adminRecords } = useAppContext();
+  const { login, signUp, resetPassword, adminRecords, supportChats, sendSupportMessage, markSupportChatRead, guestId } = useAppContext();
   const navigate = useNavigate();
+
+  // Guest Chat State
+  const [showChatModal, setShowChatModal] = useState(false);
+  const [chatMessage, setChatMessage] = useState('');
+
+  const activeChat = supportChats?.find(c => c.userId === guestId && c.status === 'OPEN');
+  const chatMessages = activeChat && activeChat.messages.length > 0 ? activeChat.messages : [
+    { sender: 'bot', text: 'Hello! Need help logging in or creating an account? I am your guest support assistant.', time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
+  ];
+
+  const handleSendChatMessage = (e) => {
+    e.preventDefault();
+    if (!chatMessage.trim()) return;
+    sendSupportMessage(chatMessage, true);
+    setChatMessage('');
+  };
 
   // General Status Messages
   const [error, setError] = useState('');
@@ -685,6 +701,126 @@ const Auth = () => {
           </div>
         )}
       </div>
+
+      {/* Floating Chat Button */}
+      <button 
+        onClick={() => { setShowChatModal(true); markSupportChatRead(true); }}
+        style={{
+          position: 'fixed',
+          bottom: '30px',
+          right: '30px',
+          width: '60px',
+          height: '60px',
+          borderRadius: '30px',
+          background: 'var(--buy-color)',
+          color: '#fff',
+          border: 'none',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 4px 15px rgba(16, 185, 129, 0.4)',
+          cursor: 'pointer',
+          zIndex: 100
+        }}
+      >
+        <MessageSquare size={28} />
+        {supportChats?.some(c => c.userId === guestId && c.unreadByUser) && (
+          <div style={{ position: 'absolute', top: 0, right: 0, background: 'var(--sell-color)', width: '16px', height: '16px', borderRadius: '8px' }}></div>
+        )}
+      </button>
+
+      {/* Chat Modal */}
+      {showChatModal && (
+        <div className="modal-overlay" style={{ zIndex: 1000 }}>
+          <div className="glass-panel modal-content" style={{ 
+            maxWidth: '420px', 
+            height: '80vh', 
+            maxHeight: '600px', 
+            display: 'flex', 
+            flexDirection: 'column', 
+            padding: 0, 
+            borderRadius: '20px',
+            overflow: 'hidden',
+            width: '90%'
+          }}>
+            {/* Chat Header */}
+            <div style={{ 
+              padding: '16px 20px', 
+              background: 'rgba(15, 23, 42, 0.9)', 
+              borderBottom: '1px solid var(--panel-border)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', textAlign: 'left' }}>
+                <Headset size={20} color="#38bdf8" />
+                <div>
+                  <h4 style={{ fontSize: '14px', margin: 0, fontWeight: '700', color: 'var(--text-primary)' }}>Live Operator</h4>
+                  <small style={{ color: 'var(--buy-color)', fontSize: '11px' }}>Online Support Agent</small>
+                </div>
+              </div>
+              <button onClick={() => setShowChatModal(false)} style={{ background: 'none', color: 'var(--text-secondary)', border: 'none', cursor: 'pointer' }}><X size={20} /></button>
+            </div>
+            
+            {/* Message Area */}
+            <div style={{ 
+              flex: 1, 
+              padding: '20px', 
+              overflowY: 'auto', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              gap: '12px' 
+            }}>
+              {chatMessages.map((msg, idx) => {
+                const isBot = msg.sender === 'bot';
+                return (
+                  <div key={idx} style={{
+                    alignSelf: isBot ? 'flex-start' : 'flex-end',
+                    maxWidth: '80%',
+                    textAlign: 'left'
+                  }}>
+                    <div style={{
+                      background: isBot ? 'rgba(255,255,255,0.05)' : '#38bdf8',
+                      color: isBot ? 'var(--text-primary)' : '#000',
+                      padding: '10px 14px',
+                      borderRadius: isBot ? '14px 14px 14px 4px' : '14px 14px 4px 14px',
+                      fontSize: '13px',
+                      lineHeight: '1.4',
+                      border: isBot ? '1px solid var(--panel-border)' : 'none'
+                    }}>
+                      {msg.text}
+                    </div>
+                    <small style={{ fontSize: '10px', color: 'var(--text-secondary)', display: 'block', marginTop: '4px', textAlign: isBot ? 'left' : 'right' }}>
+                      {msg.time}
+                    </small>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Input Form */}
+            <form onSubmit={handleSendChatMessage} style={{ 
+              padding: '14px 20px', 
+              background: 'rgba(15, 23, 42, 0.9)', 
+              borderTop: '1px solid var(--panel-border)',
+              display: 'flex',
+              gap: '10px'
+            }}>
+              <input 
+                type="text" 
+                className="custom-input" 
+                placeholder="Ask support assistant..." 
+                value={chatMessage}
+                onChange={(e) => setChatMessage(e.target.value)}
+                style={{ flex: 1, padding: '10px 14px', fontSize: '13px' }}
+              />
+              <button type="submit" className="btn btn-primary" style={{ padding: '10px 14px' }}>
+                <Send size={15} />
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
