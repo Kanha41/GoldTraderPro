@@ -65,8 +65,8 @@ const TradingPlatform = () => {
     setIsProcessingOrder(true);
 
     const pipValue = 1.0; 
-    const tpDistance = 5 * pipValue;
-    const slDistance = 1 * pipValue;
+    const tpDistance = 7 * pipValue;
+    const slDistance = 3 * pipValue;
 
     await addTrade({
       pair: 'PAXG/USDT',
@@ -254,8 +254,8 @@ const TradingPlatform = () => {
               />
             </div>
             <div style={{ marginTop: '15px', marginBottom: '25px', padding: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', fontSize: '13px', color: 'var(--text-secondary)' }}>
-              Auto TP: 5 Pips<br/>
-              Auto SL: 1 Pip<br/>
+              Auto TP: 7 Points<br/>
+              Auto SL: 3 Points<br/>
               Profit on TP: 140 Rs
             </div>
             <div className="trade-buttons">
