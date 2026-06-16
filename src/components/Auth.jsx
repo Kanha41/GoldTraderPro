@@ -39,7 +39,7 @@ const Auth = () => {
 
   // --- Forgot Password Fields ---
   const [forgotInput, setForgotInput] = useState(''); // Username or Email
-  const [recoveryMethod, setRecoveryMethod] = useState('otp'); // 'otp' or 'question'
+  const [recoveryMethod, setRecoveryMethod] = useState('question'); // 'otp' or 'question'
   const [forgotStep, setForgotStep] = useState(1); // 1: username check, 2: reset password verification
   const [matchedUser, setMatchedUser] = useState(null);
   
@@ -184,7 +184,7 @@ const Auth = () => {
         }
       } else {
         if (!checkData.securityQuestion) {
-          setError('This user does not have a security question configured. Please recover using email OTP instead.');
+          setError('This user does not have a security question configured. Please contact support to recover your account.');
           return;
         }
         setForgotStep(2);
@@ -575,60 +575,6 @@ const Auth = () => {
                   />
                 </div>
 
-                <div className="input-group">
-                  <label style={{ fontSize: '13px', fontWeight: '500', marginBottom: '4px' }}>Choose Recovery Option</label>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    <label style={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      gap: '10px', 
-                      background: 'rgba(255,255,255,0.03)', 
-                      padding: '12px 16px', 
-                      borderRadius: '8px', 
-                      border: recoveryMethod === 'otp' ? '1px solid var(--accent)' : '1px solid var(--panel-border)',
-                      cursor: 'pointer',
-                      transition: '0.3s'
-                    }}>
-                      <input 
-                        type="radio" 
-                        name="recovery" 
-                        value="otp"
-                        checked={recoveryMethod === 'otp'}
-                        onChange={() => setRecoveryMethod('otp')}
-                        style={{ accentColor: 'var(--accent)', cursor: 'pointer' }}
-                      />
-                      <div>
-                        <span style={{ fontSize: '14px', fontWeight: '600', display: 'block' }}>Email OTP Verification</span>
-                        <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Send a 6-digit simulation code to email</span>
-                      </div>
-                    </label>
-
-                    <label style={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      gap: '10px', 
-                      background: 'rgba(255,255,255,0.03)', 
-                      padding: '12px 16px', 
-                      borderRadius: '8px', 
-                      border: recoveryMethod === 'question' ? '1px solid var(--accent)' : '1px solid var(--panel-border)',
-                      cursor: 'pointer',
-                      transition: '0.3s'
-                    }}>
-                      <input 
-                        type="radio" 
-                        name="recovery" 
-                        value="question"
-                        checked={recoveryMethod === 'question'}
-                        onChange={() => setRecoveryMethod('question')}
-                        style={{ accentColor: 'var(--accent)', cursor: 'pointer' }}
-                      />
-                      <div>
-                        <span style={{ fontSize: '14px', fontWeight: '600', display: 'block' }}>Security Question Recovery</span>
-                        <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Answer your pre-configured security question</span>
-                      </div>
-                    </label>
-                  </div>
-                </div>
 
                 <button type="submit" className="btn btn-primary" style={{ padding: '14px', fontSize: '16px', justifyContent: 'center', marginTop: '10px' }}>
                   Next Step <ArrowLeft size={16} style={{ transform: 'rotate(180deg)' }} />
