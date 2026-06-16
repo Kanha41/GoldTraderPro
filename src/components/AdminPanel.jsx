@@ -1,13 +1,20 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../context/useAppContext';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Check, X } from 'lucide-react';
+import { ArrowLeft, Check, X, RefreshCw } from 'lucide-react';
 
 const AdminPanel = () => {
-  const { adminRecords, setAdminRecords, updateUserRole, processTransactionRequest, user: currentUser, feedbacks, setFeedbacks, supportChats, replySupportMessage } = useAppContext();
+  const { adminRecords, setAdminRecords, updateUserRole, processTransactionRequest, user: currentUser, feedbacks, setFeedbacks, supportChats, replySupportMessage, refreshAdminData } = useAppContext();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('trades'); // 'requests', 'users', 'trades', 'feedback', 'support'
+  const [activeTab, setActiveTab] = useState('trades');
   const [replyInputs, setReplyInputs] = useState({});
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await refreshAdminData();
+    setTimeout(() => setIsRefreshing(false), 600);
+  };
 
   const handleSupportReply = (chatId) => {
     const text = replyInputs[chatId];
@@ -83,6 +90,7 @@ const AdminPanel = () => {
             <th>Type</th>
             <th>Username</th>
             <th>Amount (Rs)</th>
+            <th>UTR / Txn ID</th>
             <th>Bank/UPI Details</th>
             <th>Status</th>
             <th>Action</th>
@@ -106,6 +114,15 @@ const AdminPanel = () => {
               </td>
               <td>{req.username}</td>
               <td>{Number(req.tx.amount || 0).toFixed(2)}</td>
+              <td>
+                {req.tx.label ? (
+                  <span style={{ fontFamily: 'monospace', fontSize: '12px', color: '#a5f3fc', background: 'rgba(165,243,252,0.08)', padding: '3px 8px', borderRadius: '6px', wordBreak: 'break-all' }}>
+                    {req.tx.label}
+                  </span>
+                ) : (
+                  <span style={{ color: 'var(--text-secondary)', fontSize: '12px', fontStyle: 'italic' }}>—</span>
+                )}
+              </td>
               <td>
                 {req.tx.type === 'WITHDRAWAL' && req.verification ? (
                   <div style={{ fontSize: '12px', lineHeight: '1.6', color: '#a5f3fc' }}>
@@ -387,9 +404,20 @@ const AdminPanel = () => {
         <div className="logo">
           <span>&#x2B22;</span> Admin Dashboard
         </div>
-        <button className="btn btn-outline" onClick={() => navigate(-1)}>
-          <ArrowLeft size={16} /> Back
-        </button>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <button
+            className="btn btn-outline"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', opacity: isRefreshing ? 0.7 : 1 }}
+          >
+            <RefreshCw size={15} style={{ animation: isRefreshing ? 'spin 0.6s linear infinite' : 'none' }} />
+            {isRefreshing ? 'Refreshing...' : 'Refresh'}
+          </button>
+          <button className="btn btn-outline" onClick={() => navigate(-1)}>
+            <ArrowLeft size={16} /> Back
+          </button>
+        </div>
       </header>
 
       <div style={{ display: 'flex', gap: '20px', marginBottom: '20px' }}>
@@ -407,6 +435,17 @@ const AdminPanel = () => {
         <div className="tabs">
           <button className={`tab ${activeTab === 'requests' ? 'active' : ''}`} onClick={() => setActiveTab('requests')}>
             Transaction Requests
+            {(() => {
+              const pendingCount = adminRecords.reduce((acc, r) => {
+                return acc + (r.transactions || []).filter(t => t.status === 'PENDING' && (t.type === 'DEPOSIT' || t.type === 'WITHDRAWAL')).length;
+              }, 0);
+              return pendingCount > 0 ? (
+                <span style={{ marginLeft: '8px', background: 'var(--sell-color)', color: '#fff', borderRadius: '10px', padding: '1px 7px', fontSize: '11px', fontWeight: '700' }}>
+                  {pendingCount}
+                </span>
+              ) : null;
+            })()
+            }
           </button>
           <button className={`tab ${activeTab === 'users' ? 'active' : ''}`} onClick={() => setActiveTab('users')}>
             All Users

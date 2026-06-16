@@ -165,6 +165,22 @@ export const AppProvider = ({ children }) => {
     loadUserData();
   }, [accountType]);
 
+  // Auto-refresh admin records every 30 seconds so new deposit/withdrawal requests appear live
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    // Only poll if user is admin
+    const stored = sessionStorage.getItem('currentUser');
+    const storedUser = stored ? JSON.parse(stored) : null;
+    if (!storedUser || storedUser.role !== 'admin') return;
+
+    const interval = setInterval(() => {
+      loadUserData();
+    }, 30000); // every 30 seconds
+
+    return () => clearInterval(interval);
+  }, []);
+
   // Handle Sign In API
   const login = async (usernameOrEmail, password) => {
     try {
@@ -547,7 +563,8 @@ export const AppProvider = ({ children }) => {
     updateVerification,
     processTransactionRequest,
     livePrice,
-    priceChange
+    priceChange,
+    refreshAdminData: loadUserData
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
