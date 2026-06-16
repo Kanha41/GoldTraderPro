@@ -10,7 +10,7 @@ const Auth = () => {
   const [mode, setMode] = useState('signin');
   
   // AppContext functions
-  const { login, signUp, resetPassword, adminRecords, supportChats, sendSupportMessage, markSupportChatRead, guestId } = useAppContext();
+  const { login, signUp, resetPassword, adminRecords, supportChats, sendSupportMessage, replySupportMessageByUserId, markSupportChatRead, guestId } = useAppContext();
   const navigate = useNavigate();
 
   // Guest Chat State
@@ -25,8 +25,21 @@ const Auth = () => {
   const handleSendChatMessage = (e) => {
     e.preventDefault();
     if (!chatMessage.trim()) return;
-    sendSupportMessage(chatMessage, true);
+    const msg = chatMessage;
+    sendSupportMessage(msg, true);
     setChatMessage('');
+
+    if (msg.includes('forgot my password')) {
+      setTimeout(() => {
+        replySupportMessageByUserId(guestId, "Please wait until the admin sends you your password, and come back here after some time for it.", "bot");
+      }, 1000);
+    }
+  };
+
+  const handleContactSupportForPassword = () => {
+    setChatMessage("Hello Admin, I forgot my password for my account. Please help me recover it.");
+    setShowChatModal(true);
+    markSupportChatRead(true);
   };
 
   // General Status Messages
@@ -595,6 +608,16 @@ const Auth = () => {
                 <button type="submit" className="btn btn-primary" style={{ padding: '14px', fontSize: '16px', justifyContent: 'center', marginTop: '10px' }}>
                   Next Step <ArrowLeft size={16} style={{ transform: 'rotate(180deg)' }} />
                 </button>
+                
+                <div style={{ textAlign: 'center', marginTop: '10px' }}>
+                  <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>Need help recovering? </span>
+                  <button 
+                    type="button" 
+                    onClick={handleContactSupportForPassword}
+                    style={{ background: 'none', border: 'none', color: 'var(--buy-color)', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>
+                    Contact Support
+                  </button>
+                </div>
               </form>
             ) : (
               /* Step 2: Answer Verification details and Change Password */

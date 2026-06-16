@@ -335,14 +335,33 @@ export const AppProvider = ({ children }) => {
   };
 
   // Reply to Chats
-  const replySupportMessage = (chatId, text) => {
+  const replySupportMessage = (chatId, text, sender = 'admin') => {
     setSupportChats(prev => prev.map(chat => {
       if (chat.id === chatId) {
         return {
           ...chat,
           messages: [...chat.messages, {
             id: Date.now(),
-            sender: 'admin',
+            sender,
+            text: text.trim(),
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          }],
+          lastUpdated: new Date().toISOString(),
+          unreadByUser: true
+        };
+      }
+      return chat;
+    }));
+  };
+
+  const replySupportMessageByUserId = (targetUserId, text, sender = 'bot') => {
+    setSupportChats(prev => prev.map(chat => {
+      if (chat.userId === targetUserId && chat.status === 'OPEN') {
+        return {
+          ...chat,
+          messages: [...chat.messages, {
+            id: Date.now(),
+            sender,
             text: text.trim(),
             time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
           }],
@@ -570,6 +589,7 @@ export const AppProvider = ({ children }) => {
     supportChats,
     sendSupportMessage,
     replySupportMessage,
+    replySupportMessageByUserId,
     markSupportChatRead,
     updateProfileDetails,
     verification,
