@@ -307,25 +307,25 @@ const HelpCenter = ({ isSubView = false, onBack }) => {
               gap: '12px' 
             }}>
               {chatMessages.map((msg, idx) => {
-                const isBot = msg.sender === 'bot';
+                const isSupport = msg.sender === 'bot' || msg.sender === 'admin';
                 return (
                   <div key={idx} style={{
-                    alignSelf: isBot ? 'flex-start' : 'flex-end',
+                    alignSelf: isSupport ? 'flex-start' : 'flex-end',
                     maxWidth: '80%',
                     textAlign: 'left'
                   }}>
                     <div style={{
-                      background: isBot ? 'rgba(255,255,255,0.05)' : '#38bdf8',
-                      color: isBot ? 'var(--text-primary)' : '#000',
+                      background: isSupport ? 'rgba(255,255,255,0.05)' : '#ffffff',
+                      color: isSupport ? 'var(--text-primary)' : '#000000',
                       padding: '10px 14px',
-                      borderRadius: isBot ? '14px 14px 14px 4px' : '14px 14px 4px 14px',
+                      borderRadius: isSupport ? '14px 14px 14px 4px' : '14px 14px 4px 14px',
                       fontSize: '13px',
                       lineHeight: '1.4',
-                      border: isBot ? '1px solid var(--panel-border)' : 'none'
+                      border: isSupport ? '1px solid var(--panel-border)' : 'none'
                     }}>
                       {msg.text}
                     </div>
-                    <small style={{ fontSize: '10px', color: 'var(--text-secondary)', display: 'block', marginTop: '4px', textAlign: isBot ? 'left' : 'right' }}>
+                    <small style={{ fontSize: '10px', color: 'var(--text-secondary)', display: 'block', marginTop: '4px', textAlign: isSupport ? 'left' : 'right' }}>
                       {msg.time}
                     </small>
                   </div>
