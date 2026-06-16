@@ -261,7 +261,6 @@ const TradingPlatform = () => {
               Order Amount: <strong>{80 * quantity} Rs</strong><br/>
               Auto TP: 7 Points<br/>
               Auto SL: 4 Points<br/>
-              Entry: 1 Pip opposite side<br/>
               Profit on TP: {140 * quantity} Rs
             </div>
             <div className="trade-buttons">
