@@ -258,10 +258,11 @@ const TradingPlatform = () => {
               />
             </div>
             <div style={{ marginTop: '15px', marginBottom: '25px', padding: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+              Order Amount: <strong>{80 * quantity} Rs</strong><br/>
               Auto TP: 7 Points<br/>
               Auto SL: 4 Points<br/>
               Entry: 1 Pip opposite side<br/>
-              Profit on TP: 140 Rs
+              Profit on TP: {140 * quantity} Rs
             </div>
             <div className="trade-buttons">
               <button 
