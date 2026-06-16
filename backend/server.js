@@ -545,14 +545,15 @@ app.post('/api/trades/add', authenticateToken, async (req, res) => {
 
     const isDemo = accountType === 'DEMO';
     const activeBalance = isDemo ? parseFloat(userObj.demoBalance) : parseFloat(userObj.balance);
+    const cost = 80 * (tradeDetails.amount || 1);
 
-    if (activeBalance < 80) {
+    if (activeBalance < cost) {
       await t.rollback();
       return res.status(400).json({ success: false, message: 'Insufficient balance to open trade.' });
     }
 
     // Deduct cost of trade
-    const updatedBalance = activeBalance - 80;
+    const updatedBalance = activeBalance - cost;
     if (isDemo) {
       userObj.demoBalance = updatedBalance;
     } else {
