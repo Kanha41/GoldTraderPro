@@ -4,11 +4,59 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Check, X, RefreshCw } from 'lucide-react';
 
 const AdminPanel = () => {
-  const { adminRecords, setAdminRecords, updateUserRole, processTransactionRequest, user: currentUser, feedbacks, setFeedbacks, supportChats, replySupportMessage, refreshAdminData } = useAppContext();
+  const { adminRecords, setAdminRecords, updateUserRole, processTransactionRequest, user: currentUser, feedbacks, setFeedbacks, supportChats, replySupportMessage, refreshAdminData, login } = useAppContext();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('trades');
   const [replyInputs, setReplyInputs] = useState({});
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const [isSessionAuthenticated, setIsSessionAuthenticated] = useState(false);
+  const [authPassword, setAuthPassword] = useState('');
+  const [authError, setAuthError] = useState('');
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
+
+  const handleAdminAuth = async (e) => {
+    e.preventDefault();
+    setIsAuthenticating(true);
+    setAuthError('');
+    const res = await login(currentUser.username, authPassword);
+    if (res.success) {
+      setIsSessionAuthenticated(true);
+    } else {
+      setAuthError('Incorrect password');
+    }
+    setIsAuthenticating(false);
+  };
+
+  if (!isSessionAuthenticated) {
+    return (
+      <div className="app-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '20px' }}>
+        <div className="glass-panel" style={{ width: '100%', maxWidth: '400px', textAlign: 'center' }}>
+          <h2 style={{ marginBottom: '20px' }}>Admin Verification</h2>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: '20px' }}>Please re-enter your password to continue to the Admin Panel.</p>
+          <form onSubmit={handleAdminAuth}>
+            <div className="input-group" style={{ textAlign: 'left' }}>
+              <label>Password</label>
+              <input 
+                type="password" 
+                className="custom-input" 
+                value={authPassword} 
+                onChange={(e) => setAuthPassword(e.target.value)}
+                required
+              />
+            </div>
+            {authError && <div style={{ color: 'var(--sell-color)', fontSize: '13px', marginTop: '10px' }}>{authError}</div>}
+            <button type="submit" className="btn btn-buy" style={{ width: '100%', marginTop: '20px' }} disabled={isAuthenticating}>
+              {isAuthenticating ? 'Verifying...' : 'Verify'}
+            </button>
+          </form>
+          <button type="button" className="btn btn-outline" style={{ width: '100%', marginTop: '15px' }} onClick={() => navigate('/')}>
+            Back to Platform
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
