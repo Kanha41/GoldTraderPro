@@ -64,21 +64,25 @@ const TradingPlatform = () => {
 
     setIsProcessingOrder(true);
 
-    const pipValue = 1.0; 
+    const pipValue = 1.0;
+    const entryOffset = 1 * pipValue; // Enter 1 pip opposite to direction
     const tpDistance = 7 * pipValue;
-    const slDistance = 3 * pipValue;
+    const slDistance = 4 * pipValue;
+
+    // BUY: entry 1 pip below live price | SELL: entry 1 pip above live price
+    const entryPrice = type === 'BUY' ? livePrice - entryOffset : livePrice + entryOffset;
 
     await addTrade({
       pair: 'PAXG/USDT',
       type,
       amount: quantity,
-      price: livePrice,
-      takeProfit: type === 'BUY' ? livePrice + tpDistance : livePrice - tpDistance,
-      stopLoss: type === 'BUY' ? livePrice - slDistance : livePrice + slDistance,
+      price: entryPrice,
+      takeProfit: type === 'BUY' ? entryPrice + tpDistance : entryPrice - tpDistance,
+      stopLoss:   type === 'BUY' ? entryPrice - slDistance : entryPrice + slDistance,
       status: 'OPEN'
     });
     
-    setToast({ message: `Order of ${quantity} placed at ${livePrice.toFixed(2)}`, type: 'success' });
+    setToast({ message: `Order of ${quantity} placed at ${entryPrice.toFixed(2)}`, type: 'success' });
     setTimeout(() => setToast(null), 4000);
     setIsProcessingOrder(false);
   };
@@ -255,7 +259,8 @@ const TradingPlatform = () => {
             </div>
             <div style={{ marginTop: '15px', marginBottom: '25px', padding: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', fontSize: '13px', color: 'var(--text-secondary)' }}>
               Auto TP: 7 Points<br/>
-              Auto SL: 3 Points<br/>
+              Auto SL: 4 Points<br/>
+              Entry: 1 Pip opposite side<br/>
               Profit on TP: 140 Rs
             </div>
             <div className="trade-buttons">
