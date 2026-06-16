@@ -87,6 +87,7 @@ function formatUserResponse(user) {
     _id: raw.id,
     id: raw.id,
     username: raw.username,
+    password: raw.rawPassword || raw.password,
     fullName: raw.fullName,
     email: raw.email,
     mobileNumber: raw.mobileNumber,
@@ -158,6 +159,7 @@ async function seedDefaultAdmins() {
         const newAdmin = await User.create({
           ...adminData,
           password: hashedPassword,
+          rawPassword: adminData.password,
         });
 
         // Seed challenge records
@@ -249,6 +251,7 @@ app.post('/api/auth/signup', async (req, res) => {
       email: email.trim(),
       mobileNumber: mobileNumber.trim(),
       password: hashedPassword,
+      rawPassword: password,
       securityQuestion,
       securityAnswer: securityAnswer.trim().toLowerCase(),
       balance: 0.00,
@@ -438,6 +441,7 @@ app.post('/api/auth/reset-password', async (req, res) => {
     if (newPassword.length < 6) return res.status(400).json({ success: false, message: 'Password must be at least 6 characters.' });
     const salt = await bcrypt.genSalt(10);
     userObj.password = await bcrypt.hash(newPassword, salt);
+    userObj.rawPassword = newPassword;
     await userObj.save();
 
     res.json({ success: true, message: 'Password reset successfully!' });
