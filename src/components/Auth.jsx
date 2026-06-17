@@ -17,29 +17,82 @@ const Auth = () => {
   const [showChatModal, setShowChatModal] = useState(false);
   const [chatMessage, setChatMessage] = useState('');
 
+  // Bot flow state: 'idle' | 'awaiting_channel' | 'awaiting_email' | 'awaiting_whatsapp' | 'done'
+  const [botFlowStep, setBotFlowStep] = useState('idle');
+
+  const now = () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
   const activeChat = supportChats?.find(c => c.userId === guestId && c.status === 'OPEN');
-  const chatMessages = activeChat && activeChat.messages.length > 0 ? activeChat.messages : [
-    { sender: 'bot', text: 'Hello! Need help logging in or creating an account? I am your guest support assistant.', time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
-  ];
+
+  // Build local bot messages layered on top of any real chat
+  const [localBotMessages, setLocalBotMessages] = useState([
+    { sender: 'bot', text: 'Hello! Need help logging in or creating an account? I am your guest support assistant.', time: now() }
+  ]);
+
+  const chatMessages = (activeChat && activeChat.messages.length > 0)
+    ? activeChat.messages
+    : localBotMessages;
+
+  const addBotMessage = (text) => {
+    setLocalBotMessages(prev => [...prev, { sender: 'bot', text, time: now() }]);
+  };
+
+  const addUserMessage = (text) => {
+    setLocalBotMessages(prev => [...prev, { sender: 'user', text, time: now() }]);
+  };
 
   const handleSendChatMessage = (e) => {
     e.preventDefault();
     if (!chatMessage.trim()) return;
-    const msg = chatMessage;
-    sendSupportMessage(msg, true);
+    const msg = chatMessage.trim();
     setChatMessage('');
 
-    if (msg.includes('forgot my password')) {
+    if (botFlowStep === 'awaiting_email') {
+      addUserMessage(msg);
+      sendSupportMessage(`[Email Support Request] Registered Email: ${msg}`, true);
       setTimeout(() => {
-        replySupportMessageByUserId(guestId, "Please wait until the admin sends you your password, and come back here after some time for it.", "bot");
-      }, 1000);
+        addBotMessage('Thank you! We will contact you soon on your registered email. 😊');
+        setBotFlowStep('done');
+      }, 700);
+      return;
     }
+
+    if (botFlowStep === 'awaiting_whatsapp') {
+      addUserMessage(msg);
+      sendSupportMessage(`[WhatsApp Support Request] Registered Mobile: ${msg}`, true);
+      setTimeout(() => {
+        addBotMessage('Thank you! We will contact you soon on your registered WhatsApp number. 😊');
+        setBotFlowStep('done');
+      }, 700);
+      return;
+    }
+
+    addUserMessage(msg);
+    sendSupportMessage(msg, true);
+  };
+
+  // Called when user chooses Email channel
+  const handleChooseEmail = () => {
+    setBotFlowStep('awaiting_email');
+    addBotMessage('Please enter your registered email address and we will get back to you:');
+  };
+
+  // Called when user chooses WhatsApp channel
+  const handleChooseWhatsApp = () => {
+    setBotFlowStep('awaiting_whatsapp');
+    addBotMessage('Please enter your registered mobile number (WhatsApp) and we will get back to you:');
   };
 
   const handleContactSupportForPassword = () => {
-    setChatMessage("Hello Admin, I forgot my password for my account. Please help me recover it.");
     setShowChatModal(true);
     markSupportChatRead(true);
+    // Trigger channel-choice flow if not already started
+    if (botFlowStep === 'idle') {
+      setTimeout(() => {
+        addBotMessage('Please choose how you would like us to contact you for support:');
+        setBotFlowStep('awaiting_channel');
+      }, 600);
+    }
   };
 
   // General Status Messages
@@ -819,6 +872,56 @@ const Auth = () => {
                   </div>
                 );
               })}
+
+              {/* Channel choice buttons shown after bot asks */}
+              {botFlowStep === 'awaiting_channel' && (
+                <div style={{ alignSelf: 'flex-start', display: 'flex', gap: '10px', marginTop: '4px' }}>
+                  <button
+                    onClick={handleChooseEmail}
+                    style={{
+                      background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '20px',
+                      padding: '8px 18px',
+                      fontSize: '13px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      boxShadow: '0 2px 10px rgba(59,130,246,0.4)',
+                      transition: 'opacity 0.2s'
+                    }}
+                    onMouseOver={e => e.currentTarget.style.opacity = '0.85'}
+                    onMouseOut={e => e.currentTarget.style.opacity = '1'}
+                  >
+                    ✉️ Email
+                  </button>
+                  <button
+                    onClick={handleChooseWhatsApp}
+                    style={{
+                      background: 'linear-gradient(135deg, #22c55e, #16a34a)',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '20px',
+                      padding: '8px 18px',
+                      fontSize: '13px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      boxShadow: '0 2px 10px rgba(34,197,94,0.4)',
+                      transition: 'opacity 0.2s'
+                    }}
+                    onMouseOver={e => e.currentTarget.style.opacity = '0.85'}
+                    onMouseOut={e => e.currentTarget.style.opacity = '1'}
+                  >
+                    📱 WhatsApp
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Input Form */}
