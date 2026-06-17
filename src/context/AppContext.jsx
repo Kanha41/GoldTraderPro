@@ -15,6 +15,9 @@ export const AppProvider = ({ children }) => {
     return saved ? saved : 'REAL';
   });
   const [verification, setVerification] = useState(null);
+  const [activeChallengeAccount, setActiveChallengeAccount] = useState(null);
+  const [passedChallengeAccounts, setPassedChallengeAccounts] = useState([]);
+  const [failedChallengeAccounts, setFailedChallengeAccounts] = useState([]);
 
   // Global Market State
   const [livePrice, setLivePrice] = useState(0);
@@ -85,42 +88,77 @@ export const AppProvider = ({ children }) => {
     if (!trades || trades.length === 0) return;
     
     trades.forEach(trade => {
-      if (trade.status !== 'OPEN') return;
       // Skip if this trade is already being completed
       if (completingTradesRef.current.has(trade.id)) return;
 
-      const tp = parseFloat(trade.takeProfit);
-      const sl = parseFloat(trade.stopLoss);
-      const entryPrice = parseFloat(trade.price);
-      let shouldComplete = false;
-      let reward = 0;
-      
-      if (trade.type === 'BUY') {
-        if (!isNaN(tp) && tp > 0 && livePrice >= tp) {
-          reward = entryPrice > 0 ? 140 : 80;
-          shouldComplete = true;
-        } else if (!isNaN(sl) && sl > 0 && livePrice <= sl) {
-          reward = 0;
-          shouldComplete = true;
-        }
-      } else if (trade.type === 'SELL') {
-        if (!isNaN(tp) && tp > 0 && livePrice <= tp) {
-          reward = entryPrice > 0 ? 140 : 80;
-          shouldComplete = true;
-        } else if (!isNaN(sl) && sl > 0 && livePrice >= sl) {
-          reward = 0;
-          shouldComplete = true;
-        }
-      }
+      if (accountType === 'CHALLENGE') {
+        if (trade.result !== 'PENDING') return;
 
-      if (shouldComplete) {
-        completingTradesRef.current.add(trade.id);
-        completeTrade(trade.id, reward).finally(() => {
-          completingTradesRef.current.delete(trade.id);
-        });
+        const tp = parseFloat(trade.tpPrice);
+        const sl = parseFloat(trade.slPrice);
+        let shouldComplete = false;
+        let isWin = false;
+
+        if (trade.side === 'BUY') {
+          if (!isNaN(tp) && tp > 0 && livePrice >= tp) {
+            shouldComplete = true;
+            isWin = true;
+          } else if (!isNaN(sl) && sl > 0 && livePrice <= sl) {
+            shouldComplete = true;
+            isWin = false;
+          }
+        } else if (trade.side === 'SELL') {
+          if (!isNaN(tp) && tp > 0 && livePrice <= tp) {
+            shouldComplete = true;
+            isWin = true;
+          } else if (!isNaN(sl) && sl > 0 && livePrice >= sl) {
+            shouldComplete = true;
+            isWin = false;
+          }
+        }
+
+        if (shouldComplete) {
+          completingTradesRef.current.add(trade.id);
+          completeChallengeTrade(trade.id, isWin).finally(() => {
+            completingTradesRef.current.delete(trade.id);
+          });
+        }
+      } else {
+        if (trade.status !== 'OPEN') return;
+
+        const tp = parseFloat(trade.takeProfit);
+        const sl = parseFloat(trade.stopLoss);
+        const entryPrice = parseFloat(trade.price);
+        let shouldComplete = false;
+        let reward = 0;
+        
+        if (trade.type === 'BUY') {
+          if (!isNaN(tp) && tp > 0 && livePrice >= tp) {
+            reward = entryPrice > 0 ? 140 : 80;
+            shouldComplete = true;
+          } else if (!isNaN(sl) && sl > 0 && livePrice <= sl) {
+            reward = 0;
+            shouldComplete = true;
+          }
+        } else if (trade.type === 'SELL') {
+          if (!isNaN(tp) && tp > 0 && livePrice <= tp) {
+            reward = entryPrice > 0 ? 140 : 80;
+            shouldComplete = true;
+          } else if (!isNaN(sl) && sl > 0 && livePrice >= sl) {
+            reward = 0;
+            shouldComplete = true;
+          }
+        }
+
+        if (shouldComplete) {
+          completingTradesRef.current.add(trade.id);
+          completeTrade(trade.id, reward).finally(() => {
+            completingTradesRef.current.delete(trade.id);
+          });
+        }
       }
     });
-  }, [livePrice, trades]);
+  }, [livePrice, trades, accountType]);
 
   // Helper to fetch authorization header
   const getAuthHeaders = () => {
@@ -148,8 +186,23 @@ export const AppProvider = ({ children }) => {
           role: u.role
         });
         setVerification(u.verification || null);
-        setBalance(accountType === 'DEMO' ? u.demoBalance : u.balance);
-        setTrades(accountType === 'DEMO' ? u.demoTrades : u.trades);
+        setActiveChallengeAccount(u.activeChallengeAccount || null);
+        setPassedChallengeAccounts(u.passedChallengeAccounts || []);
+        setFailedChallengeAccounts(u.failedChallengeAccounts || []);
+
+        if (accountType === 'CHALLENGE') {
+          setBalance(u.activeChallengeAccount ? parseFloat(u.activeChallengeAccount.balance) : 0);
+          const sortedChallengeTrades = u.activeChallengeAccount?.trades 
+            ? [...u.activeChallengeAccount.trades].sort((a,b) => new Date(b.openedAt || 0) - new Date(a.openedAt || 0))
+            : [];
+          setTrades(sortedChallengeTrades);
+        } else if (accountType === 'DEMO') {
+          setBalance(u.demoBalance);
+          setTrades(u.demoTrades);
+        } else {
+          setBalance(u.balance);
+          setTrades(u.trades);
+        }
         
         // If admin, load all users
         if (u.role === 'admin') {
@@ -565,6 +618,76 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  // 3-Stage Challenge Actions
+  const enrollChallengeAccount = async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/challenge-account/enroll`, {
+        method: 'POST',
+        headers: getAuthHeaders()
+      });
+      const data = await res.json();
+      if (data.success) {
+        await loadUserData();
+        return { success: true, message: data.message };
+      }
+      return { success: false, message: data.message };
+    } catch (err) {
+      console.error('Failed to enroll in 3-stage challenge:', err);
+      return { success: false, message: 'Server connection failed.' };
+    }
+  };
+
+  const addChallengeTrade = async (tradeDetails) => {
+    try {
+      const res = await fetch(`${API_URL}/api/challenge-account/trade/add`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          side: tradeDetails.side,
+          lotSize: tradeDetails.lotSize,
+          currentPrice: tradeDetails.currentPrice
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        await loadUserData();
+        return { success: true };
+      } else {
+        alert(data.message || 'Failed to place trade.');
+        await loadUserData();
+        return { success: false, message: data.message };
+      }
+    } catch (err) {
+      console.error('Failed to register challenge trade:', err);
+      await loadUserData();
+      return { success: false, message: 'Server connection failed.' };
+    }
+  };
+
+  const completeChallengeTrade = async (tradeId, isWin) => {
+    try {
+      const res = await fetch(`${API_URL}/api/challenge-account/trade/complete`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ tradeId, isWin })
+      });
+      const data = await res.json();
+      if (data.success) {
+        await loadUserData();
+        if (data.message && (data.message.includes('Failed') || data.message.includes('Congratulations') || data.message.includes('completed'))) {
+          alert(data.message);
+        }
+      } else {
+        if (data.message) {
+          alert(data.message);
+        }
+        await loadUserData();
+      }
+    } catch (err) {
+      console.error('Failed to complete challenge trade:', err);
+    }
+  };
+
   const value = {
     user,
     balance,
@@ -598,7 +721,13 @@ export const AppProvider = ({ children }) => {
     livePrice,
     priceChange,
     guestId,
-    refreshAdminData: loadUserData
+    refreshAdminData: loadUserData,
+    activeChallengeAccount,
+    passedChallengeAccounts,
+    failedChallengeAccounts,
+    enrollChallengeAccount,
+    addChallengeTrade,
+    completeChallengeTrade
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

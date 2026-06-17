@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../context/useAppContext';
+import { useNavigate } from 'react-router-dom';
 import MobileNavBar from './MobileNavBar';
 import { Trophy, Award, Star, X, Info, Target } from 'lucide-react';
 import {
@@ -21,17 +22,39 @@ const ChallengeRulesModal = ({ type, onClose }) => (
     <div className="glass-panel modal-content" style={{ maxWidth: '420px', textAlign: 'left' }}>
       <div className="modal-header">
         <h2>
-          {type === '60_TRADE'
-            ? '60-Trade Challenge Rules'
-            : type === '7_DAY'
-              ? '7-Day Challenge Rules'
-              : '30-Day Challenge Rules'}
+          {type === '3_STAGE'
+            ? '3-Stage Challenge Rules'
+            : type === '60_TRADE'
+              ? '60-Trade Challenge Rules'
+              : type === '7_DAY'
+                ? '7-Day Challenge Rules'
+                : '30-Day Challenge Rules'}
         </h2>
         <button onClick={onClose} className="modal-close"><X size={22} /></button>
       </div>
       <div style={{ color: 'var(--text-secondary)', lineHeight: '1.6', fontSize: '14px' }}>
         <ul className="rules-list" style={{ paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {type === '60_TRADE' ? (
+          {type === '3_STAGE' ? (
+            <>
+              <li><strong>3-Stage Evaluation:</strong> Prove your consistency across 3 key stages.</li>
+              <li><strong>Stage 1 - Profit Target:</strong> Grow starting balance from $1,000 to $1,300 (+30% profit).</li>
+              <li><strong>Stage 2 - Consistency:</strong> Win at least 5 out of your first 8 completed trades.</li>
+              <li><strong>Stage 3 - Consecutive Streak:</strong> Complete 3 consecutive winning trades in a row. A loss demotes you back to Stage 2.</li>
+              <li>
+                <strong>Strict Risk &amp; Anti-Abuse Rules:</strong>
+                <ul style={{ paddingLeft: '15px', marginTop: '4px' }}>
+                  <li>Max 3 active trades at once.</li>
+                  <li>No hedging (opposite BUY/SELL trades open at same time).</li>
+                  <li>No martingale doubling lot-sizes after a loss.</li>
+                  <li>XAUUSD (Gold) instruments only.</li>
+                  <li>Minimum trade duration is 30 seconds.</li>
+                  <li>Max daily loss limit of 5% ($50).</li>
+                  <li>Max trailing drawdown limit of 20% ($200, or balance dropping to/below $800).</li>
+                </ul>
+              </li>
+              <li><strong>Payout:</strong> Pass all stages to submit a ₹15,000 reward for admin approval automatically.</li>
+            </>
+          ) : type === '60_TRADE' ? (
             <>
               <li>
                 <strong>Based on trades, not days:</strong> This challenge counts{' '}
@@ -88,7 +111,16 @@ const ChallengeRulesModal = ({ type, onClose }) => (
 );
 
 const ChallengeScreen = () => {
-  const { user, adminRecords, switchChallenge, enrollSixtyTradeChallenge } = useAppContext();
+  const { 
+    user, 
+    adminRecords, 
+    switchChallenge, 
+    enrollSixtyTradeChallenge, 
+    activeChallengeAccount, 
+    enrollChallengeAccount, 
+    setAccountType 
+  } = useAppContext();
+  const navigate = useNavigate();
   const [showRules, setShowRules] = useState(null);
   const [dayHover, setDayHover] = useState(false);
 
@@ -172,6 +204,175 @@ const ChallengeScreen = () => {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {/* 3-Stage Funded Challenge Card */}
+          <div
+            className="glass-panel"
+            style={{
+              borderRadius: '16px',
+              border: '1px solid rgba(16, 185, 129, 0.35)',
+              background: 'rgba(16, 185, 129, 0.04)',
+              textAlign: 'left',
+              padding: '24px',
+              position: 'relative'
+            }}
+          >
+            <div
+              style={{
+                position: 'absolute',
+                top: '20px',
+                right: '20px',
+                background: activeChallengeAccount
+                  ? activeChallengeAccount.challengeStatus === 'PASSED'
+                    ? 'var(--buy-color)'
+                    : 'var(--accent)'
+                  : 'var(--text-secondary)',
+                color: '#000',
+                padding: '4px 12px',
+                borderRadius: '12px',
+                fontSize: '11px',
+                fontWeight: 'bold',
+                letterSpacing: '0.05em'
+              }}
+            >
+              {activeChallengeAccount
+                ? activeChallengeAccount.challengeStatus === 'PASSED'
+                  ? 'PASSED'
+                  : `STAGE ${activeChallengeAccount.currentStage} ACTIVE`
+                : 'NOT ENROLLED'}
+            </div>
+
+            <h3
+              style={{
+                fontSize: '18px',
+                color: 'var(--buy-color)',
+                fontWeight: '700',
+                marginBottom: '4px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+            >
+              <Trophy size={20} style={{ color: 'var(--buy-color)' }} />
+              3-Stage Funded Challenge
+            </h3>
+            <span
+              style={{
+                fontSize: '12px',
+                color: 'var(--accent)',
+                fontWeight: '600',
+                display: 'block',
+                marginBottom: '8px'
+              }}
+            >
+              Target Reward: ₹15,000 Cash Prize + Funded Status
+            </span>
+            <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '16px', lineHeight: '1.45' }}>
+              Grow balance from $1,000 to $1,300, pass consistency win-rates, and get a 3-consecutive-win streak. Strict risk rules apply.
+            </p>
+
+            {activeChallengeAccount ? (
+              <>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px', background: 'rgba(0,0,0,0.2)', padding: '12px', borderRadius: '8px', border: '1px solid var(--panel-border)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>Account Balance:</span>
+                    <strong style={{ color: '#fff' }}>${parseFloat(activeChallengeAccount.balance).toFixed(2)} USD</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>Current Stage:</span>
+                    <strong style={{ color: 'var(--buy-color)' }}>Stage {activeChallengeAccount.currentStage}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>Drawdown Limit:</span>
+                    <strong style={{ color: 'var(--sell-color)' }}>$800.00 USD</strong>
+                  </div>
+                  {activeChallengeAccount.currentStage === 1 && (
+                    <div style={{ marginTop: '4px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '4px' }}>
+                        <span style={{ color: 'var(--text-secondary)' }}>Target ($1,300):</span>
+                        <span>{Math.max(0, Math.min(100, (((parseFloat(activeChallengeAccount.balance) - 1000) / 300) * 100))).toFixed(0)}%</span>
+                      </div>
+                      <div style={{ height: '4px', background: 'rgba(255,255,255,0.05)', borderRadius: '2px', overflow: 'hidden' }}>
+                        <div style={{
+                          width: `${Math.max(0, Math.min(100, (((parseFloat(activeChallengeAccount.balance) - 1000) / 300) * 100)))}%`,
+                          height: '100%',
+                          background: 'var(--buy-color)'
+                        }} />
+                      </div>
+                    </div>
+                  )}
+                  {activeChallengeAccount.currentStage === 2 && activeChallengeAccount.progress && (
+                    <div style={{ fontSize: '12px', marginTop: '4px' }}>
+                      <span style={{ color: 'var(--text-secondary)' }}>Win Rate Test:</span> <strong>{activeChallengeAccount.progress.wins} Wins / {activeChallengeAccount.progress.losses} Losses</strong> ({activeChallengeAccount.progress.tradeCount}/8 Trades closed)
+                    </div>
+                  )}
+                  {activeChallengeAccount.currentStage === 3 && activeChallengeAccount.progress && (
+                    <div style={{ fontSize: '12px', marginTop: '4px' }}>
+                      <span style={{ color: 'var(--text-secondary)' }}>Streak:</span> <strong style={{ color: '#f59e0b' }}>{activeChallengeAccount.progress.currentStreak} of 3 wins</strong> in a row
+                    </div>
+                  )}
+                </div>
+                {activeChallengeAccount.challengeStatus === 'PASSED' && (
+                  <div style={{ background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.25)', borderRadius: '10px', padding: '12px 14px', marginBottom: '16px', fontSize: '12px', color: 'var(--buy-color)', fontWeight: 'bold' }}>
+                    Congratulations! You completed the challenge. A reward of ₹15,000 was added and is pending admin approval!
+                  </div>
+                )}
+              </>
+            ) : (
+              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '16px', lineHeight: '1.5' }}>
+                Enroll to get a challenge evaluation account starting at $1,000. Switch to the Challenge tab on the Home screen to trade.
+              </p>
+            )}
+
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                paddingTop: '15px',
+                borderTop: '1px solid var(--panel-border)',
+                gap: '10px'
+              }}
+            >
+              {!activeChallengeAccount && (
+                <button
+                  onClick={async () => {
+                    if (window.confirm("Enroll in the 3-Stage Funded Challenge? This will start a new evaluation account starting at $1,000. Proceed?")) {
+                      const res = await enrollChallengeAccount();
+                      if (res && res.success) {
+                        alert("Enrolled successfully! Go to the Home tab and select 'Challenge' to begin trading!");
+                      } else {
+                        alert(res?.message || "Enrollment failed.");
+                      }
+                    }
+                  }}
+                  className="btn"
+                  style={{ padding: '8px 14px', fontSize: '12px', flex: 1, background: 'linear-gradient(90deg, var(--buy-color), #059669)', color: '#000', fontWeight: 'bold' }}
+                >
+                  Enroll in 3-Stage Challenge
+                </button>
+              )}
+              {activeChallengeAccount && activeChallengeAccount.challengeStatus !== 'PASSED' && (
+                <button
+                  onClick={() => {
+                    setAccountType('CHALLENGE');
+                    navigate('/');
+                  }}
+                  className="btn"
+                  style={{ padding: '8px 14px', fontSize: '12px', flex: 1 }}
+                >
+                  Trade Challenge Account
+                </button>
+              )}
+              <button
+                onClick={() => setShowRules('3_STAGE')}
+                className="btn btn-outline"
+                style={{ padding: '6px 12px', fontSize: '12px', gap: '4px', marginLeft: 'auto' }}
+              >
+                <Info size={13} /> Rules
+              </button>
+            </div>
+          </div>
+
           {/* 60 Trade Challenge — independent */}
           <div
             className="glass-panel"

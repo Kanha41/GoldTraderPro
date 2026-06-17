@@ -5,7 +5,7 @@ import VerificationModal from './VerificationModal';
 import { 
   User, Wallet, CreditCard, Info, MessageSquare, 
   BookOpen, Settings, ChevronRight, LogOut, X,
-  Send, HelpCircle, Clock, ArrowDownLeft, CheckCircle
+  Send, HelpCircle, Clock, ArrowDownLeft, CheckCircle, Trophy
 } from 'lucide-react';
 import HelpCenter from './HelpCenter';
 import MobileNavBar from './MobileNavBar';
@@ -30,7 +30,24 @@ const YoutubeIcon = () => (
 
 
 const ProfileDashboard = () => {
-  const { user, balance, logout, deposit, withdraw, adminRecords, submitFeedback, accountType, setAccountType, updateProfileDetails, verification, supportChats } = useAppContext();
+  const { 
+    user, 
+    balance, 
+    logout, 
+    deposit, 
+    withdraw, 
+    adminRecords, 
+    submitFeedback, 
+    accountType, 
+    setAccountType, 
+    updateProfileDetails, 
+    verification, 
+    supportChats,
+    activeChallengeAccount,
+    passedChallengeAccounts,
+    failedChallengeAccounts,
+    enrollChallengeAccount
+  } = useAppContext();
   const navigate = useNavigate();
 
   const [showHelpCenter, setShowHelpCenter] = useState(false);
@@ -145,6 +162,10 @@ const ProfileDashboard = () => {
   };
 
   const handleRowClick = (item) => {
+    if (accountType === 'CHALLENGE' && (item === 'deposit' || item === 'withdraw')) {
+      alert("Deposits and withdrawals are disabled for Challenge accounts. Use Real Account for deposits/withdrawals.");
+      return;
+    }
     if (item === 'deposit') {
       setShowDepositModal(true);
     } else if (item === 'withdraw') {
@@ -262,19 +283,25 @@ const ProfileDashboard = () => {
               position: 'absolute',
               top: '2px',
               bottom: '2px',
-              left: accountType === 'REAL' ? '2px' : '50%',
-              width: 'calc(50% - 4px)',
+              left: accountType === 'REAL' ? '2px' : accountType === 'CHALLENGE' ? 'calc(100% / 3)' : 'calc(2 * (100% / 3))',
+              width: 'calc(100% / 3 - 4px)',
               background: accountType === 'REAL' 
                 ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(16, 185, 129, 0.1))'
-                : 'linear-gradient(135deg, rgba(234, 179, 8, 0.25), rgba(217, 119, 6, 0.15))',
+                : accountType === 'CHALLENGE'
+                  ? 'linear-gradient(135deg, rgba(56, 189, 248, 0.25), rgba(14, 165, 233, 0.15))'
+                  : 'linear-gradient(135deg, rgba(234, 179, 8, 0.25), rgba(217, 119, 6, 0.15))',
               border: accountType === 'REAL' 
                 ? '1px solid rgba(16, 185, 129, 0.4)' 
-                : '1px solid rgba(234, 179, 8, 0.4)',
+                : accountType === 'CHALLENGE'
+                  ? '1px solid rgba(56, 189, 248, 0.4)'
+                  : '1px solid rgba(234, 179, 8, 0.4)',
               borderRadius: '28px',
               transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
               boxShadow: accountType === 'REAL' 
                 ? '0 0 10px rgba(16, 185, 129, 0.2)' 
-                : '0 0 10px rgba(234, 179, 8, 0.2)',
+                : accountType === 'CHALLENGE'
+                  ? '0 0 10px rgba(56, 189, 248, 0.2)'
+                  : '0 0 10px rgba(234, 179, 8, 0.2)',
               zIndex: 1
             }} />
             
@@ -283,8 +310,9 @@ const ProfileDashboard = () => {
               style={{
                 flex: 1,
                 background: 'none',
+                border: 'none',
                 color: accountType === 'REAL' ? 'var(--buy-color)' : 'var(--text-secondary)',
-                fontSize: '14px',
+                fontSize: '13px',
                 fontWeight: '700',
                 zIndex: 2,
                 borderRadius: '28px',
@@ -292,11 +320,33 @@ const ProfileDashboard = () => {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '6px',
+                gap: '4px',
                 textShadow: accountType === 'REAL' ? '0 0 8px rgba(16, 185, 129, 0.3)' : 'none'
               }}
             >
-              Real Account
+              Real
+            </button>
+
+            <button 
+              onClick={() => setAccountType('CHALLENGE')}
+              style={{
+                flex: 1,
+                background: 'none',
+                border: 'none',
+                color: accountType === 'CHALLENGE' ? '#38bdf8' : 'var(--text-secondary)',
+                fontSize: '13px',
+                fontWeight: '700',
+                zIndex: 2,
+                borderRadius: '28px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '4px',
+                textShadow: accountType === 'CHALLENGE' ? '0 0 8px rgba(56, 189, 248, 0.3)' : 'none'
+              }}
+            >
+              Challenge
             </button>
             
             <button 
@@ -304,8 +354,9 @@ const ProfileDashboard = () => {
               style={{
                 flex: 1,
                 background: 'none',
+                border: 'none',
                 color: accountType === 'DEMO' ? 'var(--accent)' : 'var(--text-secondary)',
-                fontSize: '14px',
+                fontSize: '13px',
                 fontWeight: '700',
                 zIndex: 2,
                 borderRadius: '28px',
@@ -313,16 +364,82 @@ const ProfileDashboard = () => {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '6px',
+                gap: '4px',
                 textShadow: accountType === 'DEMO' ? '0 0 8px rgba(234, 179, 8, 0.3)' : 'none'
               }}
             >
-              Demo Account
+              Demo
             </button>
           </div>
 
+          {/* Challenge progress metrics card on Profile tab */}
+          {accountType === 'CHALLENGE' && activeChallengeAccount && (
+            <div className="glass-panel" style={{
+              borderRadius: '16px',
+              border: '1px solid rgba(56, 189, 248, 0.3)',
+              background: 'rgba(15, 23, 42, 0.6)',
+              padding: '20px',
+              marginBottom: '20px',
+              textAlign: 'left'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
+                <Trophy size={18} color="#38bdf8" />
+                <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#fff', margin: 0 }}>Active Evaluation Progress</h3>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '13px' }}>
+                <span style={{ color: 'var(--text-secondary)' }}>Current Stage</span>
+                <strong style={{ color: '#38bdf8' }}>Stage {activeChallengeAccount.currentStage}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '13px' }}>
+                <span style={{ color: 'var(--text-secondary)' }}>Account Balance</span>
+                <strong style={{ color: '#fff' }}>${parseFloat(activeChallengeAccount.balance).toFixed(2)} USD</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '13px' }}>
+                <span style={{ color: 'var(--text-secondary)' }}>Max Drawdown Limit</span>
+                <strong style={{ color: 'var(--sell-color)' }}>$800.00 USD (or 20% drawdown)</strong>
+              </div>
+              
+              {activeChallengeAccount.currentStage === 1 && (
+                <div style={{ marginTop: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '6px' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>Stage 1 Target ($1,300) Progress</span>
+                    <span style={{ color: '#38bdf8', fontWeight: 'bold' }}>
+                      {Math.max(0, Math.min(100, (((parseFloat(activeChallengeAccount.balance) - 1000) / 300) * 100))).toFixed(0)}%
+                    </span>
+                  </div>
+                  <div style={{ height: '6px', background: 'rgba(0,0,0,0.4)', borderRadius: '3px', overflow: 'hidden' }}>
+                    <div style={{
+                      width: `${Math.max(0, Math.min(100, (((parseFloat(activeChallengeAccount.balance) - 1000) / 300) * 100)))}%`,
+                      height: '100%',
+                      background: '#38bdf8',
+                      borderRadius: '3px'
+                    }} />
+                  </div>
+                </div>
+              )}
+              {activeChallengeAccount.currentStage === 2 && activeChallengeAccount.progress && (
+                <div style={{ marginTop: '12px', padding: '10px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid var(--panel-border)' }}>
+                  <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>Stage 2 Consistency Test</span>
+                  <strong style={{ fontSize: '13px', color: '#fff' }}>
+                    {activeChallengeAccount.progress.wins} Wins / {activeChallengeAccount.progress.losses} Losses ({activeChallengeAccount.progress.tradeCount} of 8 trades)
+                  </strong>
+                  <span style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block', marginTop: '4px' }}>Need at least 5 wins to pass.</span>
+                </div>
+              )}
+              {activeChallengeAccount.currentStage === 3 && activeChallengeAccount.progress && (
+                <div style={{ marginTop: '12px', padding: '10px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid var(--panel-border)' }}>
+                  <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>Stage 3 Streak</span>
+                  <strong style={{ fontSize: '13px', color: '#f59e0b' }}>
+                    {activeChallengeAccount.progress.currentStreak} of 3 Consecutive Wins
+                  </strong>
+                  <span style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block', marginTop: '4px' }}>A loss demotes you back to Stage 2.</span>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* --- Navigation Cards Stack --- */}
-                    {/* Row 0: Verification Status */}
+          {/* Row 0: Verification Status */}
           <div 
             onClick={() => setShowVerificationModal(true)}
             style={{
@@ -338,7 +455,7 @@ const ProfileDashboard = () => {
           >
             <Info size={20} color={verification ? 'var(--buy-color)' : 'var(--sell-color)'} style={{ marginRight: '16px' }} />
             <span style={{ fontWeight: '600', fontSize: '15px', flex: 1, textAlign: 'left' }}>Verification</span>
-            <span style={{ fontWeight: '700', fontSize: '14px', color: verification ? 'var(--buy-color)' : 'var(--sell-color)', marginRight: '10px' }}>
+            <span style={{ fontWeight: '700', fontSize: '14px', color: verification ? 'Completed' : 'Pending', marginRight: '10px' }}>
               {verification ? 'Completed' : 'Pending'}
             </span>
             <ChevronRight size={18} color="var(--text-secondary)" />
@@ -359,7 +476,7 @@ const ProfileDashboard = () => {
             <Wallet size={20} color="var(--accent)" style={{ marginRight: '16px' }} />
             <span style={{ fontWeight: '600', fontSize: '15px', flex: 1, textAlign: 'left' }}>Balance</span>
             <span style={{ fontWeight: '700', fontSize: '16px', color: 'var(--accent)', marginRight: '10px' }}>
-              ₹{balance.toFixed(2)}
+              {accountType === 'CHALLENGE' ? `$${balance.toFixed(2)} USD` : `₹${balance.toFixed(2)}`}
             </span>
             <ChevronRight size={18} color="var(--text-secondary)" />
           </div>

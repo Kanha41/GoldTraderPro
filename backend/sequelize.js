@@ -292,6 +292,141 @@ const TradeChallengeData = sequelize.define('TradeChallengeData', {
   tableName: 'TradeChallengeData',
 });
 
+// Define ChallengeAccount model
+const ChallengeAccount = sequelize.define('ChallengeAccount', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true,
+  },
+  userId: {
+    type: DataTypes.UUID,
+    allowNull: false,
+  },
+  balance: {
+    type: DataTypes.DECIMAL(12, 2),
+    defaultValue: 1000.00,
+  },
+  equity: {
+    type: DataTypes.DECIMAL(12, 2),
+    defaultValue: 1000.00,
+  },
+  challengeStatus: {
+    type: DataTypes.STRING,
+    defaultValue: 'ACTIVE', // 'ACTIVE', 'PASSED', 'FAILED'
+  },
+  currentStage: {
+    type: DataTypes.INTEGER,
+    defaultValue: 1, // 1, 2, 3
+  },
+  highestBalance: {
+    type: DataTypes.DECIMAL(12, 2),
+    defaultValue: 1000.00,
+  }
+}, {
+  timestamps: true,
+  tableName: 'ChallengeAccounts',
+});
+
+// Define ChallengeProgress model
+const ChallengeProgress = sequelize.define('ChallengeProgress', {
+  id: {
+    type: DataTypes.INTEGER,
+    autoIncrement: true,
+    primaryKey: true,
+  },
+  accountId: {
+    type: DataTypes.UUID,
+    allowNull: false,
+  },
+  stage: {
+    type: DataTypes.INTEGER,
+    defaultValue: 1,
+  },
+  wins: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+  },
+  losses: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+  },
+  tradeCount: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+  },
+  currentStreak: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+  },
+  targetReached: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+  }
+}, {
+  timestamps: false,
+  tableName: 'ChallengeProgress',
+});
+
+// Define ChallengeTrade model
+const ChallengeTrade = sequelize.define('ChallengeTrade', {
+  id: {
+    type: DataTypes.INTEGER,
+    autoIncrement: true,
+    primaryKey: true,
+  },
+  accountId: {
+    type: DataTypes.UUID,
+    allowNull: false,
+  },
+  symbol: {
+    type: DataTypes.STRING,
+    defaultValue: 'XAUUSD',
+  },
+  side: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    validate: {
+      isIn: [['BUY', 'SELL']],
+    }
+  },
+  lotSize: {
+    type: DataTypes.DECIMAL(12, 2),
+    defaultValue: 0.01,
+  },
+  entryPrice: {
+    type: DataTypes.DECIMAL(12, 4),
+    allowNull: false,
+  },
+  tpPrice: {
+    type: DataTypes.DECIMAL(12, 4),
+    allowNull: false,
+  },
+  slPrice: {
+    type: DataTypes.DECIMAL(12, 4),
+    allowNull: false,
+  },
+  profitLoss: {
+    type: DataTypes.DECIMAL(12, 2),
+    defaultValue: 0.00,
+  },
+  result: {
+    type: DataTypes.STRING,
+    defaultValue: 'PENDING', // 'PENDING', 'WIN', 'LOSS', 'VIOLATION'
+  },
+  openedAt: {
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW,
+  },
+  closedAt: {
+    type: DataTypes.DATE,
+    allowNull: true,
+  }
+}, {
+  timestamps: false,
+  tableName: 'ChallengeTrades',
+});
+
 // Establish Model Associations
 User.hasMany(Trade, { as: 'tradesList', foreignKey: 'userId', onDelete: 'CASCADE' });
 Trade.belongsTo(User, { foreignKey: 'userId' });
@@ -308,6 +443,16 @@ ChallengeData.belongsTo(User, { foreignKey: 'userId' });
 User.hasOne(TradeChallengeData, { as: 'tradeChallengeData', foreignKey: 'userId', onDelete: 'CASCADE' });
 TradeChallengeData.belongsTo(User, { foreignKey: 'userId' });
 
+// 3-Stage Challenge Associations
+User.hasMany(ChallengeAccount, { as: 'challengeAccounts', foreignKey: 'userId', onDelete: 'CASCADE' });
+ChallengeAccount.belongsTo(User, { foreignKey: 'userId' });
+
+ChallengeAccount.hasOne(ChallengeProgress, { as: 'progress', foreignKey: 'accountId', onDelete: 'CASCADE' });
+ChallengeProgress.belongsTo(ChallengeAccount, { foreignKey: 'accountId' });
+
+ChallengeAccount.hasMany(ChallengeTrade, { as: 'trades', foreignKey: 'accountId', onDelete: 'CASCADE' });
+ChallengeTrade.belongsTo(ChallengeAccount, { foreignKey: 'accountId' });
+
 module.exports = {
   sequelize,
   User,
@@ -315,5 +460,8 @@ module.exports = {
   Transaction,
   Verification,
   ChallengeData,
-  TradeChallengeData
+  TradeChallengeData,
+  ChallengeAccount,
+  ChallengeProgress,
+  ChallengeTrade
 };

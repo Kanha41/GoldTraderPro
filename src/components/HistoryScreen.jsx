@@ -23,31 +23,41 @@ const formatDate = (dateVal, options) => {
 };
 
 // Safe single-trade card to prevent one bad trade from crashing entire list
-const ActiveTradeCard = ({ trade }) => {
+const ActiveTradeCard = ({ trade, accountType }) => {
   try {
+    const isChallenge = accountType === 'CHALLENGE';
+    const amount = isChallenge ? trade.lotSize : trade.amount;
+    const price = trade.price || trade.entryPrice;
+    const tp = isChallenge ? trade.tpPrice : trade.takeProfit;
+    const sl = isChallenge ? trade.slPrice : trade.stopLoss;
+    const side = isChallenge ? trade.side : trade.type;
+    const date = isChallenge ? trade.openedAt : trade.date;
+
     return (
       <div
         className="glass-panel"
         style={{
           padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px',
-          borderLeft: trade.type === 'BUY' ? '4px solid var(--buy-color)' : '4px solid var(--sell-color)'
+          borderLeft: side === 'BUY' ? '4px solid var(--buy-color)' : '4px solid var(--sell-color)'
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{
-              background: trade.type === 'BUY' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-              color: trade.type === 'BUY' ? 'var(--buy-color)' : 'var(--sell-color)',
+              background: side === 'BUY' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+              color: side === 'BUY' ? 'var(--buy-color)' : 'var(--sell-color)',
               padding: '4px 10px', borderRadius: '6px', fontWeight: '700', fontSize: '12px'
             }}>
-              {trade.type || 'N/A'}
+              {side || 'N/A'}
             </span>
-            <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Qty: {n(trade.amount, 1)} Lots</span>
+            <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+              Qty: {n(amount, 0.01)} Lots
+            </span>
           </div>
           <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Entry: ${n(trade.price).toFixed(2)}</div>
+            <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Entry: ${n(price).toFixed(2)}</div>
             <div style={{ fontSize: '10px', color: 'var(--text-secondary)', opacity: 0.7 }}>
-              {formatDate(trade.date)}
+              {formatDate(date)}
             </div>
           </div>
         </div>
@@ -58,11 +68,11 @@ const ActiveTradeCard = ({ trade }) => {
           padding: '8px 12px', borderRadius: '6px'
         }}>
           <span style={{ color: 'rgba(16,185,129,0.8)' }}>
-            TP: ${n(trade.takeProfit).toFixed(2)}
+            TP: ${n(tp).toFixed(2)}
           </span>
           <span style={{ color: 'var(--text-secondary)', opacity: 0.6 }}>|</span>
           <span style={{ color: 'rgba(239,68,68,0.8)' }}>
-            SL: ${n(trade.stopLoss).toFixed(2)}
+            SL: ${n(sl).toFixed(2)}
           </span>
         </div>
       </div>
@@ -73,41 +83,78 @@ const ActiveTradeCard = ({ trade }) => {
   }
 };
 
-const SettledTradeCard = ({ trade }) => {
+const SettledTradeCard = ({ trade, accountType }) => {
   try {
-    const profitAmount = n(trade.profit);
-    const isWin = profitAmount > 0;
+    const isChallenge = accountType === 'CHALLENGE';
+    const amount = isChallenge ? trade.lotSize : trade.amount;
+    const price = trade.price || trade.entryPrice;
+    const tp = isChallenge ? trade.tpPrice : trade.takeProfit;
+    const sl = isChallenge ? trade.slPrice : trade.stopLoss;
+    const side = isChallenge ? trade.side : trade.type;
+    const date = isChallenge ? trade.closedAt : trade.date;
+    const profitVal = isChallenge ? parseFloat(trade.profitLoss) : parseFloat(trade.profit);
+    const isWin = isChallenge ? (trade.result === 'WIN') : (profitVal > 0);
+    const isViolation = isChallenge && trade.result === 'VIOLATION';
+
     return (
       <div
         className="glass-panel"
         style={{
           padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          borderLeft: isWin ? '4px solid var(--buy-color)' : '4px solid var(--sell-color)'
+          borderLeft: isViolation 
+            ? '4px solid #f59e0b' 
+            : isWin 
+              ? '4px solid var(--buy-color)' 
+              : '4px solid var(--sell-color)'
         }}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', textAlign: 'left' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <strong style={{ color: trade.type === 'BUY' ? 'var(--buy-color)' : 'var(--sell-color)', fontSize: '14px' }}>{trade.type || 'N/A'}</strong>
-            <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Qty: {n(trade.amount, 1)}</span>
+            <strong style={{ color: side === 'BUY' ? 'var(--buy-color)' : 'var(--sell-color)', fontSize: '14px' }}>{side || 'N/A'}</strong>
+            <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Qty: {n(amount, 0.01)}</span>
             <span style={{
               fontSize: '10px', padding: '2px 6px', borderRadius: '4px',
-              background: isWin ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
-              color: isWin ? 'var(--buy-color)' : 'var(--sell-color)'
+              background: isViolation
+                ? 'rgba(245,158,11,0.1)'
+                : isWin 
+                  ? 'rgba(16,185,129,0.1)' 
+                  : 'rgba(239,68,68,0.1)',
+              color: isViolation
+                ? '#f59e0b'
+                : isWin 
+                  ? 'var(--buy-color)' 
+                  : 'var(--sell-color)'
             }}>
-              {isWin ? 'TP HIT' : 'SL HIT'}
+              {isViolation 
+                ? 'VIOLATION' 
+                : isWin 
+                  ? 'TP HIT' 
+                  : 'SL HIT'}
             </span>
           </div>
           <small style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-            Entry: ${n(trade.price).toFixed(2)} &nbsp;|&nbsp; TP: ${n(trade.takeProfit).toFixed(2)} &nbsp;|&nbsp; SL: ${n(trade.stopLoss).toFixed(2)}
+            Entry: ${n(price).toFixed(2)} &nbsp;|&nbsp; TP: ${n(tp).toFixed(2)} &nbsp;|&nbsp; SL: ${n(sl).toFixed(2)}
           </small>
         </div>
 
         <div style={{ textAlign: 'right' }}>
-          <span style={{ color: isWin ? 'var(--buy-color)' : 'var(--sell-color)', fontWeight: '700', fontSize: '15px', display: 'block' }}>
-            {isWin ? `+₹${profitAmount}` : '₹0.00'}
+          <span style={{ 
+            color: isViolation 
+              ? '#f59e0b' 
+              : isWin 
+                ? 'var(--buy-color)' 
+                : 'var(--sell-color)', 
+            fontWeight: '700', 
+            fontSize: '15px', 
+            display: 'block' 
+          }}>
+            {isChallenge
+              ? (profitVal >= 0 ? `+$${profitVal.toFixed(2)}` : `-$${Math.abs(profitVal).toFixed(2)}`)
+              : (isWin ? `+₹${profitVal.toFixed(2)}` : '₹0.00')
+            }
           </span>
           <small style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>
-            {formatDate(trade.date || Date.now())}
+            {formatDate(date || Date.now())}
           </small>
         </div>
       </div>
@@ -119,13 +166,17 @@ const SettledTradeCard = ({ trade }) => {
 };
 
 const HistoryScreen = () => {
-  const { trades = [], livePrice, priceChange } = useAppContext();
+  const { trades = [], livePrice, priceChange, accountType } = useAppContext();
   const [activeSubTab, setActiveSubTab] = useState('active'); // 'active' or 'settled'
 
   // Safely filter trades — guard against non-array or items without status
   const safeTrades = Array.isArray(trades) ? trades : [];
-  const openTrades   = safeTrades.filter(t => t && t.status === 'OPEN');
-  const settledTrades = safeTrades.filter(t => t && t.status === 'CLOSED');
+  const openTrades = accountType === 'CHALLENGE'
+    ? safeTrades.filter(t => t && t.result === 'PENDING')
+    : safeTrades.filter(t => t && t.status === 'OPEN');
+  const settledTrades = accountType === 'CHALLENGE'
+    ? safeTrades.filter(t => t && t.result !== 'PENDING')
+    : safeTrades.filter(t => t && t.status === 'CLOSED');
 
   return (
     <div style={{
@@ -156,7 +207,9 @@ const HistoryScreen = () => {
 
         {/* --- Live Price Banner --- */}
         <div className="glass-panel" style={{ padding: '12px 18px', borderRadius: '12px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)' }}>
-          <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>PAXG/USDT Proxy</span>
+          <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            {accountType === 'CHALLENGE' ? 'XAU/USD Gold Feed' : 'PAXG/USDT Proxy'}
+          </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ fontWeight: '700', fontSize: '15px', color: priceChange === 'up' ? 'var(--buy-color)' : 'var(--sell-color)' }}>
               ${livePrice ? n(livePrice).toFixed(2) : 'Loading...'}
@@ -206,7 +259,7 @@ const HistoryScreen = () => {
               </div>
             ) : (
               openTrades.map(trade => (
-                <ActiveTradeCard key={trade.id || Math.random()} trade={trade} />
+                <ActiveTradeCard key={trade.id || Math.random()} trade={trade} accountType={accountType} />
               ))
             )}
           </div>
@@ -220,7 +273,7 @@ const HistoryScreen = () => {
               </div>
             ) : (
               settledTrades.map(trade => (
-                <SettledTradeCard key={trade.id || Math.random()} trade={trade} />
+                <SettledTradeCard key={trade.id || Math.random()} trade={trade} accountType={accountType} />
               ))
             )}
           </div>

@@ -16,7 +16,10 @@ const {
   Transaction, 
   Verification, 
   ChallengeData, 
-  TradeChallengeData 
+  TradeChallengeData,
+  ChallengeAccount,
+  ChallengeProgress,
+  ChallengeTrade
 } = require('./sequelize');
 
 const app = express();
@@ -83,6 +86,10 @@ function formatUserResponse(user) {
   const transactions = sortedTransactions.filter(t => !t.isDemo);
   const demoTransactions = sortedTransactions.filter(t => t.isDemo);
 
+  const activeChallengeAccount = raw.challengeAccounts ? raw.challengeAccounts.find(c => c.challengeStatus === 'ACTIVE') : null;
+  const passedChallengeAccounts = raw.challengeAccounts ? raw.challengeAccounts.filter(c => c.challengeStatus === 'PASSED') : [];
+  const failedChallengeAccounts = raw.challengeAccounts ? raw.challengeAccounts.filter(c => c.challengeStatus === 'FAILED') : [];
+
   return {
     _id: raw.id,
     id: raw.id,
@@ -101,6 +108,9 @@ function formatUserResponse(user) {
     verification: raw.verification || null,
     challengeData: raw.challengeData || { type: '30_DAY', enrolled: false, tradesToday: 0, qualifyingDays: 0, rewardSubmitted: false },
     tradeChallengeData: raw.tradeChallengeData || { enrolled: false, tradesCount: 0, winningTrades: 0, rewardSubmitted: false },
+    activeChallengeAccount,
+    passedChallengeAccounts,
+    failedChallengeAccounts,
     createdAt: raw.createdAt,
     updatedAt: raw.updatedAt
   };
@@ -114,7 +124,15 @@ async function getUserWithAssociations(userId) {
       { model: Transaction, as: 'transactionsList' },
       { model: Verification, as: 'verification' },
       { model: ChallengeData, as: 'challengeData' },
-      { model: TradeChallengeData, as: 'tradeChallengeData' }
+      { model: TradeChallengeData, as: 'tradeChallengeData' },
+      {
+        model: ChallengeAccount,
+        as: 'challengeAccounts',
+        include: [
+          { model: ChallengeProgress, as: 'progress' },
+          { model: ChallengeTrade, as: 'trades' }
+        ]
+      }
     ]
   });
 }
@@ -1137,6 +1155,392 @@ app.post('/api/admin/approve-transaction', authenticateToken, checkAdmin, async 
     await t.rollback();
     console.error('Approve transaction error:', err);
     res.status(500).json({ success: false, message: 'Failed to approve transaction.' });
+  }
+});
+
+// ==========================================
+// 3-STAGE FUNDED CHALLENGE ROUTES
+// ==========================================
+
+// Enroll in the 3-Stage Challenge
+app.post('/api/challenge-account/enroll', authenticateToken, async (req, res) => {
+  const t = await sequelize.transaction();
+  try {
+    const userObj = await getUserWithAssociations(req.user.id);
+    if (!userObj) {
+      await t.rollback();
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    // Fail any existing active challenge accounts
+    await ChallengeAccount.update(
+      { challengeStatus: 'FAILED' },
+      { where: { userId: userObj.id, challengeStatus: 'ACTIVE' }, transaction: t }
+    );
+
+    // Create new challenge account
+    const challengeAccount = await ChallengeAccount.create({
+      userId: userObj.id,
+      balance: 1000.00,
+      equity: 1000.00,
+      challengeStatus: 'ACTIVE',
+      currentStage: 1,
+      highestBalance: 1000.00
+    }, { transaction: t });
+
+    // Create challenge progress
+    await ChallengeProgress.create({
+      accountId: challengeAccount.id,
+      stage: 1,
+      wins: 0,
+      losses: 0,
+      tradeCount: 0,
+      currentStreak: 0,
+      targetReached: false
+    }, { transaction: t });
+
+    await t.commit();
+
+    const updatedUser = await getUserWithAssociations(userObj.id);
+    res.json({ success: true, message: 'Successfully enrolled in 3-Stage Challenge.', user: formatUserResponse(updatedUser) });
+  } catch (err) {
+    await t.rollback();
+    console.error('Enroll 3-Stage Challenge error:', err);
+    res.status(500).json({ success: false, message: 'Failed to enroll in challenge.' });
+  }
+});
+
+// Add a trade under 3-Stage Challenge
+app.post('/api/challenge-account/trade/add', authenticateToken, async (req, res) => {
+  const { side, lotSize, currentPrice } = req.body;
+  const { Op } = require('sequelize');
+  const t = await sequelize.transaction();
+
+  try {
+    const userObj = await getUserWithAssociations(req.user.id);
+    if (!userObj) {
+      await t.rollback();
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    const challengeAccount = await ChallengeAccount.findOne({
+      where: { userId: userObj.id, challengeStatus: 'ACTIVE' },
+      transaction: t
+    });
+
+    if (!challengeAccount) {
+      await t.rollback();
+      return res.status(400).json({ success: false, message: 'No active challenge account found. Please enroll first.' });
+    }
+
+    // Rule 1: XAUUSD only (implied/hardcoded)
+    
+    // Rule 2: Maximum 3 active trades at once
+    const activeTradesCount = await ChallengeTrade.count({
+      where: { accountId: challengeAccount.id, result: 'PENDING' },
+      transaction: t
+    });
+    if (activeTradesCount >= 3) {
+      await t.rollback();
+      return res.status(400).json({ success: false, message: 'Maximum of 3 active trades allowed at once.' });
+    }
+
+    // Rule 3: No hedging
+    const openTrades = await ChallengeTrade.findAll({
+      where: { accountId: challengeAccount.id, result: 'PENDING' },
+      transaction: t
+    });
+    if (openTrades.length > 0 && openTrades[0].side !== side) {
+      await t.rollback();
+      return res.status(400).json({ success: false, message: 'Hedging is not allowed. All active trades must be on the same side.' });
+    }
+
+    // Rule 4: No martingale doubling
+    const lastClosedTrade = await ChallengeTrade.findOne({
+      where: { accountId: challengeAccount.id, result: { [Op.ne]: 'PENDING' } },
+      order: [['closedAt', 'DESC']],
+      transaction: t
+    });
+    if (lastClosedTrade && parseFloat(lastClosedTrade.profitLoss) < 0) {
+      if (parseFloat(lotSize) > parseFloat(lastClosedTrade.lotSize)) {
+        await t.rollback();
+        return res.status(400).json({ success: false, message: 'Martingale doubling is not allowed after a loss. Lot size cannot exceed the last trade\'s lot size.' });
+      }
+    }
+
+    // Rule 5: Daily loss limit 5% ($50)
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const closedToday = await ChallengeTrade.findAll({
+      where: {
+        accountId: challengeAccount.id,
+        closedAt: { [Op.gte]: startOfToday },
+        result: { [Op.ne]: 'PENDING' }
+      },
+      transaction: t
+    });
+    let dailyLoss = 0;
+    closedToday.forEach(tr => {
+      if (parseFloat(tr.profitLoss) < 0) {
+        dailyLoss += Math.abs(parseFloat(tr.profitLoss));
+      }
+    });
+
+    if (dailyLoss >= 50.00) {
+      // Mark challenge as failed
+      challengeAccount.challengeStatus = 'FAILED';
+      await challengeAccount.save({ transaction: t });
+      await t.commit();
+      const updatedUser = await getUserWithAssociations(userObj.id);
+      return res.status(400).json({ success: false, message: 'Challenge Failed: Daily loss limit of 5% ($50) has been reached.', user: formatUserResponse(updatedUser) });
+    }
+
+    // Calculate Entry, TP, SL Price based on 1 pip offset against current market price
+    // BUY: Entry 1 pip below current price, TP 5 pips above entry, SL 2 pips below entry
+    // SELL: Entry 1 pip above current price, TP 5 pips below entry, SL 2 pips above entry
+    const entryOffset = 0.01;
+    const tpDistance = 0.05;
+    const slDistance = 0.02;
+
+    const priceNum = parseFloat(currentPrice);
+    const entryPrice = side === 'BUY' ? priceNum - entryOffset : priceNum + entryOffset;
+    const tpPrice = side === 'BUY' ? entryPrice + tpDistance : entryPrice - tpDistance;
+    const slPrice = side === 'BUY' ? entryPrice - slDistance : entryPrice + slDistance;
+
+    const newTrade = await ChallengeTrade.create({
+      accountId: challengeAccount.id,
+      symbol: 'XAUUSD',
+      side,
+      lotSize,
+      entryPrice,
+      tpPrice,
+      slPrice,
+      profitLoss: 0.00,
+      result: 'PENDING',
+      openedAt: new Date()
+    }, { transaction: t });
+
+    await t.commit();
+    const updatedUser = await getUserWithAssociations(userObj.id);
+    res.json({ success: true, trade: newTrade, user: formatUserResponse(updatedUser) });
+  } catch (err) {
+    await t.rollback();
+    console.error('Add Challenge Trade error:', err);
+    res.status(500).json({ success: false, message: 'Failed to place challenge trade.' });
+  }
+});
+
+// Complete a challenge trade (Hits TP or SL)
+app.post('/api/challenge-account/trade/complete', authenticateToken, async (req, res) => {
+  const { tradeId, isWin } = req.body;
+  const { Op } = require('sequelize');
+  const t = await sequelize.transaction();
+
+  try {
+    const userObj = await getUserWithAssociations(req.user.id);
+    if (!userObj) {
+      await t.rollback();
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    const challengeAccount = await ChallengeAccount.findOne({
+      where: { userId: userObj.id, challengeStatus: 'ACTIVE' },
+      include: [{ model: ChallengeProgress, as: 'progress' }],
+      transaction: t
+    });
+
+    if (!challengeAccount) {
+      await t.rollback();
+      return res.status(400).json({ success: false, message: 'No active challenge account found.' });
+    }
+
+    const trade = await ChallengeTrade.findOne({
+      where: { id: tradeId, accountId: challengeAccount.id },
+      transaction: t
+    });
+
+    if (!trade) {
+      await t.rollback();
+      return res.status(404).json({ success: false, message: 'Trade not found in active challenge.' });
+    }
+
+    if (trade.result !== 'PENDING') {
+      await t.rollback();
+      return res.status(400).json({ success: false, message: 'Trade is already closed.' });
+    }
+
+    // Set closed timestamp
+    trade.closedAt = new Date();
+    
+    // Rule: Minimum trade duration 30 seconds
+    const durationSeconds = (trade.closedAt - trade.openedAt) / 1000;
+    if (durationSeconds < 30) {
+      // Mark as violation, and fail the challenge account
+      trade.result = 'VIOLATION';
+      trade.profitLoss = 0.00;
+      await trade.save({ transaction: t });
+
+      challengeAccount.challengeStatus = 'FAILED';
+      await challengeAccount.save({ transaction: t });
+      await t.commit();
+
+      const updatedUser = await getUserWithAssociations(userObj.id);
+      return res.json({
+        success: false,
+        message: 'Challenge Failed: Minimum trade duration of 30 seconds was violated.',
+        user: formatUserResponse(updatedUser)
+      });
+    }
+
+    // Calculate profit/loss
+    // TP = 5 pips ($50 per lot), SL = 2 pips ($20 loss per lot)
+    const lotSize = parseFloat(trade.lotSize);
+    const profitLoss = isWin ? (lotSize * 50.00) : -(lotSize * 20.00);
+
+    trade.result = isWin ? 'WIN' : 'LOSS';
+    trade.profitLoss = profitLoss;
+    await trade.save({ transaction: t });
+
+    // Update challenge account balance
+    const oldBalance = parseFloat(challengeAccount.balance);
+    const newBalance = oldBalance + profitLoss;
+    challengeAccount.balance = newBalance;
+    challengeAccount.equity = newBalance; // Simple realization
+    
+    // Update trailing highest balance
+    challengeAccount.highestBalance = Math.max(parseFloat(challengeAccount.highestBalance), newBalance);
+
+    // Check Drawdown failure conditions:
+    // 1. Balance <= 800
+    // 2. Trailing drawdown > 20% (drawdown from highest balance > $200)
+    const drawdown = parseFloat(challengeAccount.highestBalance) - newBalance;
+    if (newBalance <= 800.00 || drawdown > 200.00) {
+      challengeAccount.challengeStatus = 'FAILED';
+    }
+
+    // Check Daily loss failure conditions:
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const closedToday = await ChallengeTrade.findAll({
+      where: {
+        accountId: challengeAccount.id,
+        closedAt: { [Op.gte]: startOfToday },
+        result: { [Op.in]: ['WIN', 'LOSS'] }
+      },
+      transaction: t
+    });
+    let dailyLoss = 0;
+    closedToday.forEach(tr => {
+      if (parseFloat(tr.profitLoss) < 0) {
+        dailyLoss += Math.abs(parseFloat(tr.profitLoss));
+      }
+    });
+
+    if (dailyLoss >= 50.00) {
+      challengeAccount.challengeStatus = 'FAILED';
+    }
+
+    // Process Stage Progression if the account is still ACTIVE
+    if (challengeAccount.challengeStatus === 'ACTIVE') {
+      const progress = challengeAccount.progress;
+      
+      if (challengeAccount.currentStage === 1) {
+        // Stage 1 – Profit Target: Balance >= $1,300
+        if (newBalance >= 1300.00) {
+          challengeAccount.currentStage = 2;
+          challengeAccount.balance = 1000.00; // Reset balance for Stage 2
+          challengeAccount.equity = 1000.00;
+          challengeAccount.highestBalance = 1000.00;
+
+          progress.stage = 2;
+          progress.wins = 0;
+          progress.losses = 0;
+          progress.tradeCount = 0;
+          progress.currentStreak = 0;
+          await progress.save({ transaction: t });
+        }
+      } else if (challengeAccount.currentStage === 2) {
+        // Stage 2 – Consistency Test: 5 Wins from first 8 closed trades
+        progress.tradeCount += 1;
+        if (isWin) {
+          progress.wins += 1;
+        } else {
+          progress.losses += 1;
+        }
+        await progress.save({ transaction: t });
+
+        if (progress.tradeCount === 8) {
+          if (progress.wins >= 5) {
+            challengeAccount.currentStage = 3;
+            challengeAccount.balance = 1000.00; // Reset balance for Stage 3
+            challengeAccount.equity = 1000.00;
+            challengeAccount.highestBalance = 1000.00;
+
+            progress.stage = 3;
+            progress.currentStreak = 0;
+            progress.wins = 0;
+            progress.losses = 0;
+            progress.tradeCount = 0;
+            await progress.save({ transaction: t });
+          } else {
+            challengeAccount.challengeStatus = 'FAILED';
+          }
+        }
+      } else if (challengeAccount.currentStage === 3) {
+        // Stage 3 – Consecutive Winners: 3 consecutive wins
+        if (isWin) {
+          progress.currentStreak += 1;
+          await progress.save({ transaction: t });
+
+          if (progress.currentStreak >= 3) {
+            challengeAccount.challengeStatus = 'PASSED';
+
+            // Create Transaction record for Challenge Reward (Admin approval)
+            await Transaction.create({
+              userId: userObj.id,
+              isDemo: false,
+              type: 'CHALLENGE_REWARD',
+              amount: 15000.00, // ₹15,000 cash reward
+              status: 'PENDING',
+              date: new Date(),
+              label: `3-Stage Challenge Prize for ${userObj.username}`,
+              challengeType: '3_STAGE'
+            }, { transaction: t });
+          }
+        } else {
+          // Failure in Stage 3: Return to Stage 2
+          challengeAccount.currentStage = 2;
+          challengeAccount.balance = 1000.00; // Reset balance
+          challengeAccount.equity = 1000.00;
+          challengeAccount.highestBalance = 1000.00;
+
+          progress.stage = 2;
+          progress.currentStreak = 0;
+          progress.wins = 0;
+          progress.losses = 0;
+          progress.tradeCount = 0;
+          await progress.save({ transaction: t });
+        }
+      }
+    }
+
+    await challengeAccount.save({ transaction: t });
+    await t.commit();
+
+    const updatedUser = await getUserWithAssociations(userObj.id);
+    res.json({
+      success: true,
+      message: challengeAccount.challengeStatus === 'FAILED'
+        ? 'Trade closed. Challenge Failed.'
+        : challengeAccount.challengeStatus === 'PASSED'
+          ? 'Congratulations! You completed the 3-Stage Challenge! Reward is pending approval.'
+          : 'Trade completed successfully.',
+      user: formatUserResponse(updatedUser)
+    });
+  } catch (err) {
+    await t.rollback();
+    console.error('Complete challenge trade error:', err);
+    res.status(500).json({ success: false, message: 'Failed to complete challenge trade.' });
   }
 });
 
