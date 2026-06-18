@@ -6,22 +6,6 @@ import TradingViewChart from './TradingViewChart';
 import MobileNavBar from './MobileNavBar';
 import DepositModal from './DepositModal';
 
-const RulesModal = ({ onClose }) => (
-  <div className="modal-overlay">
-    <div className="glass-panel modal-content">
-      <div className="modal-header">
-        <h2>Platform Rules</h2>
-        <button onClick={onClose} className="modal-close"><X size={24} /></button>
-      </div>
-      <div style={{ color: 'var(--text-secondary)', lineHeight: '1.6' }}>
-        <ul className="rules-list">
-          <li><strong>30-Day Challenge:</strong> Complete 30 qualifying days with at least 2 successful trades (TP hit) per day. Days do not need to be consecutive.</li>
-        </ul>
-      </div>
-    </div>
-  </div>
-);
-
 
 const TradingPlatform = () => {
   const { 
@@ -41,7 +25,6 @@ const TradingPlatform = () => {
   } = useAppContext();
   const navigate = useNavigate();
   
-  const [showRules, setShowRules] = useState(false);
   const [toast, setToast] = useState(null);
   
   const [quantity, setQuantity] = useState(1);
@@ -87,29 +70,6 @@ const TradingPlatform = () => {
         return;
       }
 
-      // Check anti-abuse rules client side
-      const openChallengeTrades = trades.filter(t => t.result === 'PENDING');
-      if (openChallengeTrades.length >= 3) {
-        alert("Maximum of 3 active trades allowed at once.");
-        setIsProcessingOrder(false);
-        return;
-      }
-
-      if (openChallengeTrades.length > 0 && openChallengeTrades[0].side !== type) {
-        alert("Hedging is not allowed. All open trades must be on the same side.");
-        setIsProcessingOrder(false);
-        return;
-      }
-
-      const closedTrades = trades.filter(t => t.result !== 'PENDING');
-      if (closedTrades.length > 0 && parseFloat(closedTrades[0].profitLoss) < 0) {
-        if (parseFloat(quantity) > parseFloat(closedTrades[0].lotSize)) {
-          alert("Martingale doubling is not allowed after a loss. Lot size cannot exceed the last trade's lot size.");
-          setIsProcessingOrder(false);
-          return;
-        }
-      }
-
       const res = await addChallengeTrade({
         side: type,
         lotSize: quantity,
@@ -117,9 +77,7 @@ const TradingPlatform = () => {
       });
 
       if (res && res.success) {
-        const entryOffset = 0.01;
-        const entryPrice = type === 'BUY' ? livePrice - entryOffset : livePrice + entryOffset;
-        setToast({ message: `Challenge ${type} Order placed at ${entryPrice.toFixed(2)}`, type: 'success' });
+        setToast({ message: `Challenge ${type} Order placed at ${livePrice.toFixed(2)}`, type: 'success' });
         setTimeout(() => setToast(null), 4000);
       }
     } else {
@@ -129,13 +87,11 @@ const TradingPlatform = () => {
         return;
       }
 
-      const pipValue = 1.0;
-      const entryOffset = 1 * pipValue; // Enter 1 pip opposite to direction
-      const tpDistance = 7 * pipValue;
-      const slDistance = 4 * pipValue;
+      const tpDistance = 7;
+      const slDistance = 4;
 
-      // BUY: entry 1 pip below live price | SELL: entry 1 pip above live price
-      const entryPrice = type === 'BUY' ? livePrice - entryOffset : livePrice + entryOffset;
+      // Entry at exact current price
+      const entryPrice = livePrice;
 
       await addTrade({
         pair: 'PAXG/USDT',
@@ -240,14 +196,7 @@ const TradingPlatform = () => {
               </div>
             </div>
 
-            <div style={{ background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.15)', borderRadius: '12px', padding: '15px', textAlign: 'left', marginBottom: '30px', fontSize: '12px', color: 'var(--text-secondary)', lineHeight: '1.6' }}>
-              <strong style={{ color: 'var(--sell-color)', display: 'block', marginBottom: '4px' }}>Strict Risk &amp; Anti-Abuse Rules:</strong>
-              • Account balance must not drop to or below $800.<br/>
-              • Trailing drawdown from peak balance must not exceed $200 (20%).<br/>
-              • Minimum trade duration is 30 seconds (faster closes violate rules).<br/>
-              • XAUUSD (Gold) trades only; maximum 3 active trades at once.<br/>
-              • Martingale lot doubling is prohibited; no hedging (opposite trades).
-            </div>
+
 
             <button
               onClick={async () => {
@@ -518,7 +467,7 @@ const TradingPlatform = () => {
                     }} />
                   </div>
                   <span style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block', marginTop: '6px' }}>
-                    Grow balance from $1,000 to $1,300. Max daily loss: $50. Drawdown limit: $800.
+                    Grow balance from $1,000 to $1,300.
                   </span>
                 </div>
               )}
@@ -619,10 +568,11 @@ const TradingPlatform = () => {
             {accountType === 'CHALLENGE' ? (
               <div style={{ marginTop: '15px', marginBottom: '25px', padding: '12px', background: 'rgba(56, 189, 248, 0.04)', border: '1px solid rgba(56, 189, 248, 0.1)', borderRadius: '8px', fontSize: '12px', color: 'var(--text-secondary)', textAlign: 'left', lineHeight: '1.5' }}>
                 Instrument: <strong>XAUUSD only</strong><br/>
-                Auto TP: <strong>5 Pips ($0.05 price move)</strong><br/>
-                Auto SL: <strong>2 Pips ($0.02 price move)</strong><br/>
-                Potential Profit (TP): <strong style={{ color: 'var(--buy-color)' }}>+${(50 * quantity).toFixed(2)} USD</strong><br/>
-                Potential Loss (SL): <strong style={{ color: 'var(--sell-color)' }}>-${(20 * quantity).toFixed(2)} USD</strong>
+                Auto TP: <strong>5 Pips ($5.00 price move)</strong><br/>
+                Auto SL: <strong>2 Pips ($2.00 price move)</strong><br/>
+                1 Pip = <strong>$1 USD (per 1 lot)</strong><br/>
+                Potential Profit (TP): <strong style={{ color: 'var(--buy-color)' }}>+${(5.00 * quantity).toFixed(2)} USD</strong><br/>
+                Potential Loss (SL): <strong style={{ color: 'var(--sell-color)' }}>-${(2.00 * quantity).toFixed(2)} USD</strong>
               </div>
             ) : (
               <div style={{ marginTop: '15px', marginBottom: '25px', padding: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', fontSize: '13px', color: 'var(--text-secondary)' }}>
@@ -655,7 +605,7 @@ const TradingPlatform = () => {
         </div>
       </div>
 
-      {showRules && <RulesModal onClose={() => setShowRules(false)} />}
+
       {showDeposit && <DepositModal onClose={() => setShowDeposit(false)} />}
       <MobileNavBar activeTab="trade" />
     </div>

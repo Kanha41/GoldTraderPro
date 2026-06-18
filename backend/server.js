@@ -1233,77 +1233,14 @@ app.post('/api/challenge-account/trade/add', authenticateToken, async (req, res)
       return res.status(400).json({ success: false, message: 'No active challenge account found. Please enroll first.' });
     }
 
-    // Rule 1: XAUUSD only (implied/hardcoded)
-    
-    // Rule 2: Maximum 3 active trades at once
-    const activeTradesCount = await ChallengeTrade.count({
-      where: { accountId: challengeAccount.id, result: 'PENDING' },
-      transaction: t
-    });
-    if (activeTradesCount >= 3) {
-      await t.rollback();
-      return res.status(400).json({ success: false, message: 'Maximum of 3 active trades allowed at once.' });
-    }
+    // XAUUSD only (implied/hardcoded)
 
-    // Rule 3: No hedging
-    const openTrades = await ChallengeTrade.findAll({
-      where: { accountId: challengeAccount.id, result: 'PENDING' },
-      transaction: t
-    });
-    if (openTrades.length > 0 && openTrades[0].side !== side) {
-      await t.rollback();
-      return res.status(400).json({ success: false, message: 'Hedging is not allowed. All active trades must be on the same side.' });
-    }
-
-    // Rule 4: No martingale doubling
-    const lastClosedTrade = await ChallengeTrade.findOne({
-      where: { accountId: challengeAccount.id, result: { [Op.ne]: 'PENDING' } },
-      order: [['closedAt', 'DESC']],
-      transaction: t
-    });
-    if (lastClosedTrade && parseFloat(lastClosedTrade.profitLoss) < 0) {
-      if (parseFloat(lotSize) > parseFloat(lastClosedTrade.lotSize)) {
-        await t.rollback();
-        return res.status(400).json({ success: false, message: 'Martingale doubling is not allowed after a loss. Lot size cannot exceed the last trade\'s lot size.' });
-      }
-    }
-
-    // Rule 5: Daily loss limit 5% ($50)
-    const startOfToday = new Date();
-    startOfToday.setHours(0, 0, 0, 0);
-    const closedToday = await ChallengeTrade.findAll({
-      where: {
-        accountId: challengeAccount.id,
-        closedAt: { [Op.gte]: startOfToday },
-        result: { [Op.ne]: 'PENDING' }
-      },
-      transaction: t
-    });
-    let dailyLoss = 0;
-    closedToday.forEach(tr => {
-      if (parseFloat(tr.profitLoss) < 0) {
-        dailyLoss += Math.abs(parseFloat(tr.profitLoss));
-      }
-    });
-
-    if (dailyLoss >= 50.00) {
-      // Mark challenge as failed
-      challengeAccount.challengeStatus = 'FAILED';
-      await challengeAccount.save({ transaction: t });
-      await t.commit();
-      const updatedUser = await getUserWithAssociations(userObj.id);
-      return res.status(400).json({ success: false, message: 'Challenge Failed: Daily loss limit of 5% ($50) has been reached.', user: formatUserResponse(updatedUser) });
-    }
-
-    // Calculate Entry, TP, SL Price based on 1 pip offset against current market price
-    // BUY: Entry 1 pip below current price, TP 5 pips above entry, SL 2 pips below entry
-    // SELL: Entry 1 pip above current price, TP 5 pips below entry, SL 2 pips above entry
-    const entryOffset = 0.01;
-    const tpDistance = 0.05;
-    const slDistance = 0.02;
+    // Entry at exact current price, 1 pip = $1.00 price movement
+    const tpDistance = 5.00;  // 5 pips = $5
+    const slDistance = 2.00;  // 2 pips = $2
 
     const priceNum = parseFloat(currentPrice);
-    const entryPrice = side === 'BUY' ? priceNum - entryOffset : priceNum + entryOffset;
+    const entryPrice = priceNum;
     const tpPrice = side === 'BUY' ? entryPrice + tpDistance : entryPrice - tpDistance;
     const slPrice = side === 'BUY' ? entryPrice - slDistance : entryPrice + slDistance;
 
@@ -1372,30 +1309,9 @@ app.post('/api/challenge-account/trade/complete', authenticateToken, async (req,
     // Set closed timestamp
     trade.closedAt = new Date();
     
-    // Rule: Minimum trade duration 30 seconds
-    const durationSeconds = (trade.closedAt - trade.openedAt) / 1000;
-    if (durationSeconds < 30) {
-      // Mark as violation, and fail the challenge account
-      trade.result = 'VIOLATION';
-      trade.profitLoss = 0.00;
-      await trade.save({ transaction: t });
-
-      challengeAccount.challengeStatus = 'FAILED';
-      await challengeAccount.save({ transaction: t });
-      await t.commit();
-
-      const updatedUser = await getUserWithAssociations(userObj.id);
-      return res.json({
-        success: false,
-        message: 'Challenge Failed: Minimum trade duration of 30 seconds was violated.',
-        user: formatUserResponse(updatedUser)
-      });
-    }
-
-    // Calculate profit/loss
-    // TP = 5 pips ($50 per lot), SL = 2 pips ($20 loss per lot)
-    const lotSize = parseFloat(trade.lotSize);
-    const profitLoss = isWin ? (lotSize * 50.00) : -(lotSize * 20.00);
+    // Calculate profit/loss: 1 pip = $1 (per 1 lot size)
+    // TP = 5 pips = +$5, SL = 2 pips = -$2 (multiplied by lot size)
+    const profitLoss = (isWin ? 5.00 : -2.00) * parseFloat(trade.lotSize);
 
     trade.result = isWin ? 'WIN' : 'LOSS';
     trade.profitLoss = profitLoss;
@@ -1405,40 +1321,8 @@ app.post('/api/challenge-account/trade/complete', authenticateToken, async (req,
     const oldBalance = parseFloat(challengeAccount.balance);
     const newBalance = oldBalance + profitLoss;
     challengeAccount.balance = newBalance;
-    challengeAccount.equity = newBalance; // Simple realization
-    
-    // Update trailing highest balance
+    challengeAccount.equity = newBalance;
     challengeAccount.highestBalance = Math.max(parseFloat(challengeAccount.highestBalance), newBalance);
-
-    // Check Drawdown failure conditions:
-    // 1. Balance <= 800
-    // 2. Trailing drawdown > 20% (drawdown from highest balance > $200)
-    const drawdown = parseFloat(challengeAccount.highestBalance) - newBalance;
-    if (newBalance <= 800.00 || drawdown > 200.00) {
-      challengeAccount.challengeStatus = 'FAILED';
-    }
-
-    // Check Daily loss failure conditions:
-    const startOfToday = new Date();
-    startOfToday.setHours(0, 0, 0, 0);
-    const closedToday = await ChallengeTrade.findAll({
-      where: {
-        accountId: challengeAccount.id,
-        closedAt: { [Op.gte]: startOfToday },
-        result: { [Op.in]: ['WIN', 'LOSS'] }
-      },
-      transaction: t
-    });
-    let dailyLoss = 0;
-    closedToday.forEach(tr => {
-      if (parseFloat(tr.profitLoss) < 0) {
-        dailyLoss += Math.abs(parseFloat(tr.profitLoss));
-      }
-    });
-
-    if (dailyLoss >= 50.00) {
-      challengeAccount.challengeStatus = 'FAILED';
-    }
 
     // Process Stage Progression if the account is still ACTIVE
     if (challengeAccount.challengeStatus === 'ACTIVE') {

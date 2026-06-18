@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAppContext } from '../context/useAppContext';
 import { useNavigate } from 'react-router-dom';
 import MobileNavBar from './MobileNavBar';
-import { Trophy, Award, Star, X, Info, Target } from 'lucide-react';
+import { Trophy, Award, Star, Target } from 'lucide-react';
 import {
   normalizeChallengeData,
   normalizeTradeChallengeData,
@@ -17,98 +17,6 @@ import {
   CHALLENGE_PRIZES
 } from '../utils/challenge';
 
-const ChallengeRulesModal = ({ type, onClose }) => (
-  <div className="modal-overlay">
-    <div className="glass-panel modal-content" style={{ maxWidth: '420px', textAlign: 'left' }}>
-      <div className="modal-header">
-        <h2>
-          {type === '3_STAGE'
-            ? '3-Stage Challenge Rules'
-            : type === '60_TRADE'
-              ? '60-Trade Challenge Rules'
-              : type === '7_DAY'
-                ? '7-Day Challenge Rules'
-                : '30-Day Challenge Rules'}
-        </h2>
-        <button onClick={onClose} className="modal-close"><X size={22} /></button>
-      </div>
-      <div style={{ color: 'var(--text-secondary)', lineHeight: '1.6', fontSize: '14px' }}>
-        <ul className="rules-list" style={{ paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {type === '3_STAGE' ? (
-            <>
-              <li><strong>3-Stage Evaluation:</strong> Prove your consistency across 3 key stages.</li>
-              <li><strong>Stage 1 - Profit Target:</strong> Grow starting balance from $1,000 to $1,300 (+30% profit).</li>
-              <li><strong>Stage 2 - Consistency:</strong> Win at least 5 out of your first 8 completed trades.</li>
-              <li><strong>Stage 3 - Consecutive Streak:</strong> Complete 3 consecutive winning trades in a row. A loss demotes you back to Stage 2.</li>
-              <li>
-                <strong>Strict Risk &amp; Anti-Abuse Rules:</strong>
-                <ul style={{ paddingLeft: '15px', marginTop: '4px' }}>
-                  <li>Max 3 active trades at once.</li>
-                  <li>No hedging (opposite BUY/SELL trades open at same time).</li>
-                  <li>No martingale doubling lot-sizes after a loss.</li>
-                  <li>XAUUSD (Gold) instruments only.</li>
-                  <li>Minimum trade duration is 30 seconds.</li>
-                  <li>Max daily loss limit of 5% ($50).</li>
-                  <li>Max trailing drawdown limit of 20% ($200, or balance dropping to/below $800).</li>
-                </ul>
-              </li>
-              <li><strong>Payout:</strong> Pass all stages to submit a ₹15,000 reward for admin approval automatically.</li>
-            </>
-          ) : type === '60_TRADE' ? (
-            <>
-              <li>
-                <strong>Based on trades, not days:</strong> This challenge counts{' '}
-                <strong style={{ color: 'var(--accent)' }}>completed trades</strong>, not calendar days.
-                Finish in 1 day or 60 days — your pace does not matter.
-              </li>
-              <li>
-                <strong>The objective:</strong> Complete{' '}
-                <strong style={{ color: 'var(--accent)' }}>{TRADE_CHALLENGE_TARGET} successful trades</strong>{' '}
-                (Take Profit hit) after enrollment to win{' '}
-                <strong style={{ color: 'var(--accent)' }}>₹{CHALLENGE_PRIZES['60_TRADE'].toLocaleString('en-IN')}</strong>.
-              </li>
-              <li>
-                <strong>What counts toward 60:</strong> Only{' '}
-                <strong style={{ color: 'var(--buy-color)' }}>successful trades</strong> (TP hit) increase your
-                progress. Losing trades (SL hit) are tracked separately and do not count toward the 60.
-              </li>
-              <li>
-                <strong>Tracking:</strong> Your dashboard shows successful vs losing trade counts so you always
-                know both numbers.
-              </li>
-              <li>
-                <strong>Mutually Exclusive:</strong> You can only be enrolled in one challenge at a time. Enrolling in the 60-Trade Challenge will terminate any active 30-Day or 7-Day challenge.
-              </li>
-              <li>
-                <strong>Payout:</strong> When you reach {TRADE_CHALLENGE_TARGET} trades, a ₹
-                {CHALLENGE_PRIZES['60_TRADE'].toLocaleString('en-IN')} reward is sent to admin for approval —
-                same process as withdrawals. Track status under Profile → Transactions.
-              </li>
-            </>
-          ) : type === '7_DAY' ? (
-            <>
-              <li><strong>The Objective:</strong> Complete <strong style={{ color: 'var(--accent)' }}>7 qualifying days</strong> to win a cash prize of <strong style={{ color: 'var(--accent)' }}>3,100 Rs</strong>.</li>
-              <li><strong>Daily Requirement:</strong> On each day you trade, execute and win at least <strong style={{ color: 'var(--buy-color)' }}>3 successful trades</strong> (hitting Take Profit).</li>
-              <li><strong>Time Limit:</strong> All daily trades must be successfully closed before 11:59 PM on that day.</li>
-              <li><strong>Flexible Pace:</strong> Days do not need to be consecutive. Miss a day and your progress stays — you simply do not earn credit for that day.</li>
-              <li><strong>Mutually Exclusive:</strong> You can only be enrolled in one challenge at a time. Enrolling here terminates any active 30-Day or 60-Trade challenge.</li>
-              <li><strong>Completion &amp; Payout:</strong> After 7 qualifying days and meeting the final day&apos;s win target, a <strong style={{ color: 'var(--accent)' }}>₹3,100</strong> reward is sent to admin for approval. Track status under Profile → Transactions.</li>
-            </>
-          ) : (
-            <>
-              <li><strong>The Objective:</strong> Complete <strong style={{ color: 'var(--accent)' }}>30 qualifying days</strong> to win a grand prize of <strong style={{ color: 'var(--accent)' }}>10,000 Rs</strong>.</li>
-              <li><strong>Daily Requirement:</strong> On each day you trade, execute and win at least <strong style={{ color: 'var(--buy-color)' }}>2 successful trades</strong> (hitting Take Profit).</li>
-              <li><strong>Time Limit:</strong> Both daily trades must be successfully closed before 11:59 PM on that day.</li>
-              <li><strong>Flexible Pace:</strong> Days do not need to be consecutive. Miss a day and your progress stays — you simply do not earn credit for that day.</li>
-              <li><strong>Mutually Exclusive:</strong> You can only be enrolled in one challenge at a time. Enrolling here terminates any active 7-Day or 60-Trade challenge.</li>
-              <li><strong>Completion &amp; Payout:</strong> After 30 qualifying days and meeting the final day&apos;s win target, a <strong style={{ color: 'var(--accent)' }}>₹10,000</strong> reward is sent to admin for approval. Track status under Profile → Transactions.</li>
-            </>
-          )}
-        </ul>
-      </div>
-    </div>
-  </div>
-);
 
 const ChallengeScreen = () => {
   const { 
@@ -121,7 +29,6 @@ const ChallengeScreen = () => {
     setAccountType 
   } = useAppContext();
   const navigate = useNavigate();
-  const [showRules, setShowRules] = useState(null);
   const [dayHover, setDayHover] = useState(false);
 
   const currentUserRecord = adminRecords.find((r) => r.username === user?.username);
@@ -267,7 +174,7 @@ const ChallengeScreen = () => {
               Target Reward: ₹15,000 Cash Prize + Funded Status
             </span>
             <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '16px', lineHeight: '1.45' }}>
-              Grow balance from $1,000 to $1,300, pass consistency win-rates, and get a 3-consecutive-win streak. Strict risk rules apply.
+              Grow balance from $1,000 to $1,300, pass consistency win-rates, and get a 3-consecutive-win streak. 1 Pip = $1 USD.
             </p>
 
             {activeChallengeAccount ? (
@@ -281,10 +188,7 @@ const ChallengeScreen = () => {
                     <span style={{ color: 'var(--text-secondary)' }}>Current Stage:</span>
                     <strong style={{ color: 'var(--buy-color)' }}>Stage {activeChallengeAccount.currentStage}</strong>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
-                    <span style={{ color: 'var(--text-secondary)' }}>Drawdown Limit:</span>
-                    <strong style={{ color: 'var(--sell-color)' }}>$800.00 USD</strong>
-                  </div>
+
                   {activeChallengeAccount.currentStage === 1 && (
                     <div style={{ marginTop: '4px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '4px' }}>
@@ -363,13 +267,7 @@ const ChallengeScreen = () => {
                   Trade Challenge Account
                 </button>
               )}
-              <button
-                onClick={() => setShowRules('3_STAGE')}
-                className="btn btn-outline"
-                style={{ padding: '6px 12px', fontSize: '12px', gap: '4px', marginLeft: 'auto' }}
-              >
-                <Info size={13} /> Rules
-              </button>
+
             </div>
           </div>
 
@@ -573,13 +471,7 @@ const ChallengeScreen = () => {
                   Enroll in 60-Trade Challenge
                 </button>
               )}
-              <button
-                onClick={() => setShowRules('60_TRADE')}
-                className="btn btn-outline"
-                style={{ padding: '6px 12px', fontSize: '12px', gap: '4px', marginLeft: 'auto' }}
-              >
-                <Info size={13} /> Rules
-              </button>
+
             </div>
           </div>
 
@@ -764,13 +656,7 @@ const ChallengeScreen = () => {
                   {challengeData.tradesToday} of {requiredTrades} trades won today
                 </span>
               </div>
-              <button
-                onClick={() => setShowRules(activeType)}
-                className="btn btn-outline"
-                style={{ padding: '6px 12px', fontSize: '12px', gap: '4px' }}
-              >
-                <Info size={13} /> Rules
-              </button>
+
             </div>
           </div>
 
@@ -942,7 +828,7 @@ const ChallengeScreen = () => {
         </div>
       </div>
 
-      {showRules && <ChallengeRulesModal type={showRules} onClose={() => setShowRules(null)} />}
+
       <MobileNavBar activeTab="challenge" />
     </div>
   );

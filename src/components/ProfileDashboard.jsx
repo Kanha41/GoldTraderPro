@@ -394,10 +394,7 @@ const ProfileDashboard = () => {
                 <span style={{ color: 'var(--text-secondary)' }}>Account Balance</span>
                 <strong style={{ color: '#fff' }}>${parseFloat(activeChallengeAccount.balance).toFixed(2)} USD</strong>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '13px' }}>
-                <span style={{ color: 'var(--text-secondary)' }}>Max Drawdown Limit</span>
-                <strong style={{ color: 'var(--sell-color)' }}>$800.00 USD (or 20% drawdown)</strong>
-              </div>
+
               
               {activeChallengeAccount.currentStage === 1 && (
                 <div style={{ marginTop: '12px' }}>
