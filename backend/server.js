@@ -1223,6 +1223,17 @@ app.post('/api/challenge-account/trade/add', authenticateToken, async (req, res)
       return res.status(400).json({ success: false, message: 'No active challenge account found. Please enroll first.' });
     }
 
+    if (challengeAccount.currentStage === 3) {
+      const openTrade = await ChallengeTrade.findOne({
+        where: { accountId: challengeAccount.id, result: 'PENDING' },
+        transaction: t
+      });
+      if (openTrade) {
+        await t.rollback();
+        return res.status(400).json({ success: false, message: 'You must wait for your current Triplet trade to close before placing another.' });
+      }
+    }
+
     const tpDistance = parseFloat(tpPips);
     const slDistance = parseFloat(slPips);
 
