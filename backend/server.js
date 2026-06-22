@@ -312,7 +312,7 @@ app.post('/api/auth/login', async (req, res) => {
   }
 
   try {
-    const { Op } = require('sequelize');
+    const { Op } = require('./sequelize');
     const userObj = await User.findOne({
       where: {
         [Op.or]: [
@@ -406,7 +406,7 @@ app.post('/api/auth/forgot-check', async (req, res) => {
   const { usernameOrEmail } = req.body;
 
   try {
-    const { Op } = require('sequelize');
+    const { Op } = require('./sequelize');
     const userObj = await User.findOne({
       where: {
         [Op.or]: [
@@ -1213,7 +1213,7 @@ app.post('/api/challenge-account/enroll', authenticateToken, async (req, res) =>
 // Add a trade under 3-Stage Challenge
 app.post('/api/challenge-account/trade/add', authenticateToken, async (req, res) => {
   const { side, lotSize, currentPrice } = req.body;
-  const { Op } = require('sequelize');
+  const { Op } = require('./sequelize');
   const t = await sequelize.transaction();
 
   try {
@@ -1270,7 +1270,7 @@ app.post('/api/challenge-account/trade/add', authenticateToken, async (req, res)
 // Complete a challenge trade (Hits TP or SL)
 app.post('/api/challenge-account/trade/complete', authenticateToken, async (req, res) => {
   const { tradeId, isWin } = req.body;
-  const { Op } = require('sequelize');
+  const { Op } = require('./sequelize');
   const t = await sequelize.transaction();
 
   try {

@@ -425,8 +425,14 @@ const ChallengeAccount = wrapModel(RawChallengeAccount);
 const ChallengeProgress = wrapModel(RawChallengeProgress);
 const ChallengeTrade = wrapModel(RawChallengeTrade);
 
+const Op = {
+  or: Symbol('or'),
+  in: Symbol('in')
+};
+
 module.exports = {
   sequelize,
+  Op,
   User,
   Trade,
   Transaction,
