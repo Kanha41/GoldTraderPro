@@ -24,25 +24,9 @@ const {
 
 const app = express();
 
-// Allow requests from localhost in dev and the live frontend URL in production
-const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:4173',
-  process.env.FRONTEND_URL  // e.g. https://goldtraderpro.vercel.app
-].filter(Boolean);
-
+// Allow all requests for the online web
 app.use(cors({
-  origin: (origin, callback) => {
-    // Allow requests with no origin (e.g. mobile apps, curl, Postman)
-    if (!origin) return callback(null, true);
-    // Allow any Vercel preview/production deployment
-    if (origin.endsWith('.vercel.app')) return callback(null, true);
-    // Allow any Railway deployment
-    if (origin.endsWith('.railway.app')) return callback(null, true);
-    // Allow explicitly listed origins
-    if (allowedOrigins.includes(origin)) return callback(null, true);
-    return callback(new Error(`CORS policy blocked request from origin: ${origin}`));
-  },
+  origin: true,
   credentials: true
 }));
 
