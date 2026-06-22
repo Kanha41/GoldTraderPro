@@ -172,7 +172,7 @@ const TradingPlatform = () => {
               Prove your trading consistency across 3 distinct evaluation stages. Pass all stages to receive a funded account with real profit payouts!
             </p>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '35px', textAlign: 'left' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '35px', textAlign: 'left' }}>
               <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--panel-border)', borderRadius: '16px', padding: '14px' }}>
                 <span style={{ fontSize: '10px', color: '#38bdf8', fontWeight: 'bold', display: 'block', textTransform: 'uppercase', marginBottom: '6px' }}>Stage 1</span>
                 <strong style={{ fontSize: '14px', color: '#fff', display: 'block', marginBottom: '4px' }}>Profit Target</strong>

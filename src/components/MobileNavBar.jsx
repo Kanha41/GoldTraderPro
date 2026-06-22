@@ -1,9 +1,11 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Trophy, TrendingUp, Clock, User, Home } from 'lucide-react';
+import { useAppContext } from '../context/useAppContext';
 
 const MobileNavBar = ({ activeTab }) => {
   const navigate = useNavigate();
+  const { user } = useAppContext();
 
   const tabs = [
     { id: 'trade', label: 'Home', icon: Home, path: '/' },
@@ -13,7 +15,11 @@ const MobileNavBar = ({ activeTab }) => {
   ];
 
   const handleTabClick = (tab) => {
-    navigate(tab.path);
+    if (tab.id !== 'trade' && !user) {
+      navigate('/login');
+    } else {
+      navigate(tab.path);
+    }
   };
 
   return (

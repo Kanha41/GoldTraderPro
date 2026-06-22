@@ -6,7 +6,8 @@ const API_URL = import.meta.env.VITE_API_URL || 'https://goldtraderpro-productio
 export const AppProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
     const saved = sessionStorage.getItem('currentUser');
-    return saved ? JSON.parse(saved) : null;
+    const token = localStorage.getItem('token');
+    return (saved && token) ? JSON.parse(saved) : null;
   });
   const [balance, setBalance] = useState(0);
   const [trades, setTrades] = useState([]);
@@ -169,7 +170,10 @@ export const AppProvider = ({ children }) => {
   // Fetch current user details & admin lists on startup/change
   const loadUserData = async () => {
     const token = localStorage.getItem('token');
-    if (!token) return;
+    if (!token) {
+      setUser(null);
+      return;
+    }
 
     try {
       const res = await fetch(`${API_URL}/api/auth/me`, {

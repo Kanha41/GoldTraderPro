@@ -36,7 +36,7 @@ function TradingViewChart() {
   }, []);
 
   return (
-    <div className="tradingview-widget-container" ref={container} style={{ flex: 1, minHeight: "310px", width: "100%", marginTop: "20px", borderRadius: "12px", overflow: "hidden", display: 'flex', flexDirection: 'column' }}>
+    <div className="tradingview-widget-container" ref={container} style={{ flex: 1, minHeight: "var(--chart-height, 450px)", width: "100%", marginTop: "20px", borderRadius: "12px", overflow: "hidden", display: 'flex', flexDirection: 'column' }}>
       <div className="tradingview-widget-container__widget" style={{ flex: 1, width: "100%" }}></div>
     </div>
   );

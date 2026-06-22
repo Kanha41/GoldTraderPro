@@ -14,6 +14,7 @@
   --sell-glow: rgba(239, 68, 68, 0.3);
   --error: #ef4444;
   --font-family: 'Outfit', sans-serif;
+  --chart-height: 480px;
 }
 
 * {
@@ -174,7 +175,7 @@ input {
 /* Main Grid */
 .main-grid {
   display: grid;
-  grid-template-columns: 1fr 380px;
+  grid-template-columns: 1fr;
   gap: 24px;
   flex: 1;
 }
@@ -518,7 +519,7 @@ html {
   }
 
   .main-grid {
-    grid-template-columns: 1fr 320px;
+    grid-template-columns: 1fr;
     gap: 16px;
   }
 
@@ -556,6 +557,10 @@ html {
 
 /* ═══ MOBILE (≤768px) ═══ */
 @media (max-width: 768px) {
+  :root {
+    --chart-height: 310px;
+  }
+
   .app-container {
     padding: 12px 10px;
     padding-bottom: 80px;
@@ -880,7 +885,7 @@ html {
   }
 
   .main-grid {
-    grid-template-columns: 1fr 420px;
+    grid-template-columns: 1fr;
   }
 }
 
