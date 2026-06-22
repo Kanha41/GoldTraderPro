@@ -1170,24 +1170,28 @@ app.post('/api/challenge-account/enroll', authenticateToken, async (req, res) =>
       { where: { userId: userObj.id, challengeStatus: 'ACTIVE' }, transaction: t }
     );
 
+    const isAdmin = userObj.role === 'ADMIN';
+    const startingStage = isAdmin ? 3 : 1;
+
     // Create new challenge account
     const challengeAccount = await ChallengeAccount.create({
       userId: userObj.id,
       balance: 1000.00,
       equity: 1000.00,
       challengeStatus: 'ACTIVE',
-      currentStage: 1,
+      currentStage: startingStage,
       highestBalance: 1000.00
     }, { transaction: t });
 
     // Create challenge progress
     await ChallengeProgress.create({
       accountId: challengeAccount.id,
-      stage: 1,
+      stage: startingStage,
       wins: 0,
       losses: 0,
       tradeCount: 0,
       currentStreak: 0,
+      tripletAttempts: 0,
       targetReached: false
     }, { transaction: t });
 
@@ -1209,14 +1213,8 @@ app.post('/api/challenge-account/trade/add', authenticateToken, async (req, res)
   const t = await sequelize.transaction();
 
   try {
-    const userObj = await getUserWithAssociations(req.user.id);
-    if (!userObj) {
-      await t.rollback();
-      return res.status(404).json({ success: false, message: 'User not found.' });
-    }
-
     const challengeAccount = await ChallengeAccount.findOne({
-      where: { userId: userObj.id, challengeStatus: 'ACTIVE' },
+      where: { userId: req.user.id, challengeStatus: 'ACTIVE' },
       transaction: t
     });
 
@@ -1256,8 +1254,7 @@ app.post('/api/challenge-account/trade/add', authenticateToken, async (req, res)
     }, { transaction: t });
 
     await t.commit();
-    const updatedUser = await getUserWithAssociations(userObj.id);
-    res.json({ success: true, trade: newTrade, user: formatUserResponse(updatedUser) });
+    res.json({ success: true, trade: newTrade });
   } catch (err) {
     await t.rollback();
     console.error('Add Challenge Trade error:', err);
@@ -1311,8 +1308,8 @@ app.post('/api/challenge-account/trade/complete', authenticateToken, async (req,
     const tpDistance = Math.abs(parseFloat(trade.tpPrice) - parseFloat(trade.entryPrice));
     const slDistance = Math.abs(parseFloat(trade.slPrice) - parseFloat(trade.entryPrice));
     
-    // In our system, 1 pip = $1.00 price movement
-    const profitLoss = (isWin ? tpDistance : -slDistance) * parseFloat(trade.lotSize);
+    // As per user request: pip = profit directly in USD, regardless of lot size
+    const profitLoss = (isWin ? tpDistance : -slDistance);
 
     trade.result = isWin ? 'WIN' : 'LOSS';
     trade.profitLoss = profitLoss;
@@ -1379,13 +1376,16 @@ app.post('/api/challenge-account/trade/complete', authenticateToken, async (req,
           progress.tradeCount = 0;
 
           if (progress.tripletAttempts >= 2) {
-            // Both attempts exhausted – reset back to Stage 1
-            challengeAccount.currentStage = 1;
+            const isAdmin = userObj.role === 'ADMIN';
+            const resetStage = isAdmin ? 3 : 1;
+
+            // Both attempts exhausted – reset back
+            challengeAccount.currentStage = resetStage;
             challengeAccount.balance = 1000.00;
             challengeAccount.equity = 1000.00;
             challengeAccount.highestBalance = 1000.00;
 
-            progress.stage = 1;
+            progress.stage = resetStage;
             progress.wins = 0;
             progress.losses = 0;
             progress.tradeCount = 0;

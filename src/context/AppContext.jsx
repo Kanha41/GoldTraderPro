@@ -660,11 +660,22 @@ export const AppProvider = ({ children }) => {
       });
       const data = await res.json();
       if (data.success) {
-        await loadUserData();
+        setUser(prevUser => {
+          if (!prevUser) return prevUser;
+          const updatedUser = { ...prevUser };
+          const activeIndex = (updatedUser.challengeAccounts || []).findIndex(c => c.challengeStatus === 'ACTIVE');
+          if (activeIndex !== -1) {
+            const acc = { ...updatedUser.challengeAccounts[activeIndex] };
+            acc.trades = [data.trade, ...(acc.trades || [])];
+            updatedUser.challengeAccounts[activeIndex] = acc;
+          }
+          return updatedUser;
+        });
+        loadUserData(); // Background refresh
         return { success: true };
       } else {
         alert(data.message || 'Failed to place trade.');
-        await loadUserData();
+        loadUserData(); // Background refresh
         return { success: false, message: data.message };
       }
     } catch (err) {

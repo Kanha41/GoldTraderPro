@@ -531,9 +531,9 @@ const TradingPlatform = () => {
                 </div>
                 <div style={{ marginTop: '15px', marginBottom: '25px', padding: '12px', background: 'rgba(56, 189, 248, 0.04)', border: '1px solid rgba(56, 189, 248, 0.1)', borderRadius: '8px', fontSize: '12px', color: 'var(--text-secondary)', textAlign: 'left', lineHeight: '1.5' }}>
                   Instrument: <strong>XAUUSD only</strong><br/>
-                  1 Pip = <strong>$1 USD (per 1 lot)</strong><br/>
-                  Potential Profit (TP): <strong style={{ color: 'var(--buy-color)' }}>+${(tpPips * 1 * quantity).toFixed(2)} USD</strong><br/>
-                  Potential Loss (SL): <strong style={{ color: 'var(--sell-color)' }}>-${(slPips * 1 * quantity).toFixed(2)} USD</strong>
+                  1 Pip = <strong>$1 USD</strong><br/>
+                  Potential Profit (TP): <strong style={{ color: 'var(--buy-color)' }}>+${(tpPips).toFixed(2)} USD</strong><br/>
+                  Potential Loss (SL): <strong style={{ color: 'var(--sell-color)' }}>-${(slPips).toFixed(2)} USD</strong>
                 </div>
               </>
             ) : (
