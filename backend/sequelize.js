@@ -1,457 +1,429 @@
-const { Sequelize, DataTypes } = require('sequelize');
+const mongoose = require('mongoose');
+const { v4: uuidv4 } = require('uuid');
 
-const DATABASE_URL = process.env.DATABASE_URL || 'postgres://postgres:postgres@localhost:5432/goldtrader';
+// Load environment variables
+require('dotenv').config();
 
-const sequelize = new Sequelize(DATABASE_URL, {
-  dialect: 'postgres',
-  logging: false, // Set to console.log to debug database queries in SQL
-  dialectOptions: DATABASE_URL.includes('neon.tech') || process.env.NODE_ENV === 'production' ? {
-    ssl: {
-      require: true,
-      rejectUnauthorized: false
-    }
-  } : {}
-});
+const DATABASE_URL = process.env.DATABASE_URL || 'mongodb://localhost:27017/goldtrader';
 
-// Define User model
-const User = sequelize.define('User', {
-  id: {
-    type: DataTypes.UUID,
-    defaultValue: DataTypes.UUIDV4,
-    primaryKey: true,
+mongoose.connect(DATABASE_URL)
+  .then(() => {
+    console.log('✅ Connected to MongoDB successfully.');
+  })
+  .catch(err => {
+    console.error('❌ MongoDB connection error:', err);
+  });
+
+const sequelize = {
+  sync: async () => {
+    if (mongoose.connection.readyState === 1) return sequelize;
+    return new Promise((resolve, reject) => {
+      mongoose.connection.once('open', () => resolve(sequelize));
+      mongoose.connection.once('error', (err) => reject(err));
+    });
   },
-  username: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    unique: true,
-    set(val) {
-      if (val) this.setDataValue('username', val.toLowerCase().trim());
-    }
+  authenticate: async () => {
+    if (mongoose.connection.readyState === 1) return;
+    return new Promise((resolve, reject) => {
+      mongoose.connection.once('open', () => resolve());
+      mongoose.connection.once('error', (err) => reject(err));
+    });
   },
-  fullName: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  email: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    unique: true,
-    set(val) {
-      if (val) this.setDataValue('email', val.toLowerCase().trim());
-    }
-  },
-  mobileNumber: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    unique: true,
-    set(val) {
-      if (val) this.setDataValue('mobileNumber', val.trim());
-    }
-  },
-  password: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  rawPassword: {
-    type: DataTypes.STRING,
-    allowNull: true,
-  },
-  role: {
-    type: DataTypes.STRING,
-    defaultValue: 'user',
-  },
-  balance: {
-    type: DataTypes.DECIMAL(12, 2),
-    defaultValue: 0.00,
-  },
-  demoBalance: {
-    type: DataTypes.DECIMAL(12, 2),
-    defaultValue: 10000.00,
-  },
-  securityQuestion: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  securityAnswer: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    set(val) {
-      if (val) this.setDataValue('securityAnswer', val.toLowerCase().trim());
-    }
+  transaction: async () => {
+    return {
+      commit: async () => {},
+      rollback: async () => {}
+    };
   }
+};
+
+// --- MONGODB/MONGOOSE SCHEMAS ---
+
+const UserSchema = new mongoose.Schema({
+  _id: { type: String, default: uuidv4 },
+  username: { type: String, required: true, unique: true, lowercase: true, trim: true },
+  fullName: { type: String, required: true },
+  email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+  mobileNumber: { type: String, required: true, unique: true, trim: true },
+  password: { type: String, required: true },
+  rawPassword: { type: String, default: null },
+  role: { type: String, default: 'user' },
+  balance: { type: Number, default: 0.00 },
+  demoBalance: { type: Number, default: 10000.00 },
+  securityQuestion: { type: String, required: true },
+  securityAnswer: { type: String, required: true, lowercase: true, trim: true }
 }, {
   timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
 });
 
-// Define Trade model
-const Trade = sequelize.define('Trade', {
-  id: {
-    type: DataTypes.INTEGER,
-    autoIncrement: true,
-    primaryKey: true,
-  },
-  isDemo: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: false,
-  },
-  pair: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  type: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    validate: {
-      isIn: [['BUY', 'SELL']],
-    }
-  },
-  amount: {
-    type: DataTypes.DECIMAL(12, 2),
-    allowNull: false,
-  },
-  price: {
-    type: DataTypes.DECIMAL(12, 4),
-    allowNull: false,
-  },
-  takeProfit: {
-    type: DataTypes.DECIMAL(12, 4),
-    allowNull: true,
-  },
-  stopLoss: {
-    type: DataTypes.DECIMAL(12, 4),
-    allowNull: true,
-  },
-  profit: {
-    type: DataTypes.DECIMAL(12, 2),
-    defaultValue: 0.00,
-  },
-  status: {
-    type: DataTypes.STRING,
-    defaultValue: 'OPEN',
-    validate: {
-      isIn: [['OPEN', 'CLOSED']],
-    }
-  },
-  date: {
-    type: DataTypes.DATE,
-    defaultValue: DataTypes.NOW,
-  }
+const TradeSchema = new mongoose.Schema({
+  userId: { type: String, required: true, ref: 'User' },
+  isDemo: { type: Boolean, default: false },
+  pair: { type: String, required: true },
+  type: { type: String, required: true, enum: ['BUY', 'SELL'] },
+  amount: { type: Number, required: true },
+  price: { type: Number, required: true },
+  takeProfit: { type: Number, default: null },
+  stopLoss: { type: Number, default: null },
+  profit: { type: Number, default: 0.00 },
+  status: { type: String, default: 'OPEN', enum: ['OPEN', 'CLOSED'] },
+  date: { type: Date, default: Date.now }
 }, {
   timestamps: false,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
 });
 
-// Define Transaction model
-const Transaction = sequelize.define('Transaction', {
-  id: {
-    type: DataTypes.INTEGER,
-    autoIncrement: true,
-    primaryKey: true,
-  },
-  isDemo: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: false,
-  },
-  type: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    validate: {
-      isIn: [['DEPOSIT', 'WITHDRAWAL', 'CHALLENGE_REWARD', 'TRADE_ENTRY']],
-    }
-  },
-  amount: {
-    type: DataTypes.DECIMAL(12, 2),
-    allowNull: false,
-  },
-  status: {
-    type: DataTypes.STRING,
-    defaultValue: 'PENDING',
-    validate: {
-      isIn: [['PENDING', 'APPROVED', 'REJECTED']],
-    }
-  },
-  date: {
-    type: DataTypes.DATE,
-    defaultValue: DataTypes.NOW,
-  },
-  label: {
-    type: DataTypes.STRING,
-    allowNull: true,
-  },
-  challengeType: {
-    type: DataTypes.STRING,
-    allowNull: true,
-  }
+const TransactionSchema = new mongoose.Schema({
+  userId: { type: String, required: true, ref: 'User' },
+  isDemo: { type: Boolean, default: false },
+  type: { type: String, required: true, enum: ['DEPOSIT', 'WITHDRAWAL', 'CHALLENGE_REWARD', 'TRADE_ENTRY'] },
+  amount: { type: Number, required: true },
+  status: { type: String, default: 'PENDING', enum: ['PENDING', 'APPROVED', 'REJECTED'] },
+  date: { type: Date, default: Date.now },
+  label: { type: String, default: null },
+  challengeType: { type: String, default: null }
 }, {
   timestamps: false,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
 });
 
-// Define Verification model
-const Verification = sequelize.define('Verification', {
-  userId: {
-    type: DataTypes.UUID,
-    primaryKey: true,
-  },
-  mode: {
-    type: DataTypes.STRING,
-    validate: {
-      isIn: [['BANK', 'UPI']],
-    }
-  },
-  bankAccount: {
-    type: DataTypes.STRING,
-    allowNull: true,
-  },
-  ifscCode: {
-    type: DataTypes.STRING,
-    allowNull: true,
-  },
-  upiNumber: {
-    type: DataTypes.STRING,
-    allowNull: true,
-  },
-  accountName: {
-    type: DataTypes.STRING,
-    allowNull: true,
-  }
+const VerificationSchema = new mongoose.Schema({
+  userId: { type: String, required: true, ref: 'User', primaryKey: true },
+  mode: { type: String, enum: ['BANK', 'UPI'] },
+  bankAccount: { type: String, default: null },
+  ifscCode: { type: String, default: null },
+  upiNumber: { type: String, default: null },
+  accountName: { type: String, default: null }
 }, {
   timestamps: false,
-  tableName: 'Verifications',
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
 });
 
-// Define ChallengeData model
-const ChallengeData = sequelize.define('ChallengeData', {
-  userId: {
-    type: DataTypes.UUID,
-    primaryKey: true,
-  },
-  type: {
-    type: DataTypes.STRING,
-    defaultValue: '30_DAY',
-  },
-  enrolled: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: false,
-  },
-  enrolledAt: {
-    type: DataTypes.DATE,
-    allowNull: true,
-  },
-  tradesToday: {
-    type: DataTypes.INTEGER,
-    defaultValue: 0,
-  },
-  qualifyingDays: {
-    type: DataTypes.INTEGER,
-    defaultValue: 0,
-  },
-  lastActiveDate: {
-    type: DataTypes.STRING,
-    allowNull: true,
-  },
-  lastCountedDate: {
-    type: DataTypes.STRING,
-    allowNull: true,
-  },
-  rewardSubmitted: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: false,
-  }
+const ChallengeDataSchema = new mongoose.Schema({
+  userId: { type: String, required: true, ref: 'User', primaryKey: true },
+  type: { type: String, default: '30_DAY' },
+  enrolled: { type: Boolean, default: false },
+  enrolledAt: { type: Date, default: null },
+  tradesToday: { type: Number, default: 0 },
+  qualifyingDays: { type: Number, default: 0 },
+  lastActiveDate: { type: String, default: null },
+  lastCountedDate: { type: String, default: null },
+  rewardSubmitted: { type: Boolean, default: false }
 }, {
   timestamps: false,
-  tableName: 'ChallengeData',
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
 });
 
-// Define TradeChallengeData model
-const TradeChallengeData = sequelize.define('TradeChallengeData', {
-  userId: {
-    type: DataTypes.UUID,
-    primaryKey: true,
-  },
-  enrolled: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: false,
-  },
-  enrolledAt: {
-    type: DataTypes.DATE,
-    allowNull: true,
-  },
-  tradesCount: {
-    type: DataTypes.INTEGER,
-    defaultValue: 0,
-  },
-  winningTrades: {
-    type: DataTypes.INTEGER,
-    defaultValue: 0,
-  },
-  rewardSubmitted: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: false,
-  }
+const TradeChallengeDataSchema = new mongoose.Schema({
+  userId: { type: String, required: true, ref: 'User', primaryKey: true },
+  enrolled: { type: Boolean, default: false },
+  enrolledAt: { type: Date, default: null },
+  tradesCount: { type: Number, default: 0 },
+  winningTrades: { type: Number, default: 0 },
+  rewardSubmitted: { type: Boolean, default: false }
 }, {
   timestamps: false,
-  tableName: 'TradeChallengeData',
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
 });
 
-// Define ChallengeAccount model
-const ChallengeAccount = sequelize.define('ChallengeAccount', {
-  id: {
-    type: DataTypes.UUID,
-    defaultValue: DataTypes.UUIDV4,
-    primaryKey: true,
-  },
-  userId: {
-    type: DataTypes.UUID,
-    allowNull: false,
-  },
-  balance: {
-    type: DataTypes.DECIMAL(12, 2),
-    defaultValue: 1000.00,
-  },
-  equity: {
-    type: DataTypes.DECIMAL(12, 2),
-    defaultValue: 1000.00,
-  },
-  challengeStatus: {
-    type: DataTypes.STRING,
-    defaultValue: 'ACTIVE', // 'ACTIVE', 'PASSED', 'FAILED'
-  },
-  currentStage: {
-    type: DataTypes.INTEGER,
-    defaultValue: 1, // 1, 2, 3
-  },
-  highestBalance: {
-    type: DataTypes.DECIMAL(12, 2),
-    defaultValue: 1000.00,
-  }
+const ChallengeAccountSchema = new mongoose.Schema({
+  _id: { type: String, default: uuidv4 },
+  userId: { type: String, required: true, ref: 'User' },
+  balance: { type: Number, default: 1000.00 },
+  equity: { type: Number, default: 1000.00 },
+  challengeStatus: { type: String, default: 'ACTIVE' },
+  currentStage: { type: Number, default: 1 },
+  highestBalance: { type: Number, default: 1000.00 }
 }, {
   timestamps: true,
-  tableName: 'ChallengeAccounts',
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
 });
 
-// Define ChallengeProgress model
-const ChallengeProgress = sequelize.define('ChallengeProgress', {
-  id: {
-    type: DataTypes.INTEGER,
-    autoIncrement: true,
-    primaryKey: true,
-  },
-  accountId: {
-    type: DataTypes.UUID,
-    allowNull: false,
-  },
-  stage: {
-    type: DataTypes.INTEGER,
-    defaultValue: 1,
-  },
-  wins: {
-    type: DataTypes.INTEGER,
-    defaultValue: 0,
-  },
-  losses: {
-    type: DataTypes.INTEGER,
-    defaultValue: 0,
-  },
-  tradeCount: {
-    type: DataTypes.INTEGER,
-    defaultValue: 0,
-  },
-  currentStreak: {
-    type: DataTypes.INTEGER,
-    defaultValue: 0,
-  },
-  targetReached: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: false,
-  }
+const ChallengeProgressSchema = new mongoose.Schema({
+  accountId: { type: String, required: true, ref: 'ChallengeAccount' },
+  stage: { type: Number, default: 1 },
+  wins: { type: Number, default: 0 },
+  losses: { type: Number, default: 0 },
+  tradeCount: { type: Number, default: 0 },
+  currentStreak: { type: Number, default: 0 },
+  targetReached: { type: Boolean, default: false }
 }, {
   timestamps: false,
-  tableName: 'ChallengeProgress',
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
 });
 
-// Define ChallengeTrade model
-const ChallengeTrade = sequelize.define('ChallengeTrade', {
-  id: {
-    type: DataTypes.INTEGER,
-    autoIncrement: true,
-    primaryKey: true,
-  },
-  accountId: {
-    type: DataTypes.UUID,
-    allowNull: false,
-  },
-  symbol: {
-    type: DataTypes.STRING,
-    defaultValue: 'XAUUSD',
-  },
-  side: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    validate: {
-      isIn: [['BUY', 'SELL']],
+const ChallengeTradeSchema = new mongoose.Schema({
+  accountId: { type: String, required: true, ref: 'ChallengeAccount' },
+  symbol: { type: String, default: 'XAUUSD' },
+  side: { type: String, required: true, enum: ['BUY', 'SELL'] },
+  lotSize: { type: Number, default: 0.01 },
+  entryPrice: { type: Number, required: true },
+  tpPrice: { type: Number, required: true },
+  slPrice: { type: Number, required: true },
+  profitLoss: { type: Number, default: 0.00 },
+  result: { type: String, default: 'PENDING' },
+  openedAt: { type: Date, default: Date.now },
+  closedAt: { type: Date, default: null }
+}, {
+  timestamps: false,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
+});
+
+// --- VIRTUAL RELATIONSHIPS (for population) ---
+
+UserSchema.virtual('tradesList', {
+  ref: 'Trade',
+  localField: '_id',
+  foreignField: 'userId'
+});
+
+UserSchema.virtual('transactionsList', {
+  ref: 'Transaction',
+  localField: '_id',
+  foreignField: 'userId'
+});
+
+UserSchema.virtual('verification', {
+  ref: 'Verification',
+  localField: '_id',
+  foreignField: 'userId',
+  justOne: true
+});
+
+UserSchema.virtual('challengeData', {
+  ref: 'ChallengeData',
+  localField: '_id',
+  foreignField: 'userId',
+  justOne: true
+});
+
+UserSchema.virtual('tradeChallengeData', {
+  ref: 'TradeChallengeData',
+  localField: '_id',
+  foreignField: 'userId',
+  justOne: true
+});
+
+UserSchema.virtual('challengeAccounts', {
+  ref: 'ChallengeAccount',
+  localField: '_id',
+  foreignField: 'userId'
+});
+
+ChallengeAccountSchema.virtual('progress', {
+  ref: 'ChallengeProgress',
+  localField: '_id',
+  foreignField: 'accountId',
+  justOne: true
+});
+
+ChallengeAccountSchema.virtual('trades', {
+  ref: 'ChallengeTrade',
+  localField: '_id',
+  foreignField: 'accountId'
+});
+
+// --- MONGOOSE MODELS ---
+
+const RawUser = mongoose.model('User', UserSchema);
+const RawTrade = mongoose.model('Trade', TradeSchema);
+const RawTransaction = mongoose.model('Transaction', TransactionSchema);
+const RawVerification = mongoose.model('Verification', VerificationSchema);
+const RawChallengeData = mongoose.model('ChallengeData', ChallengeDataSchema);
+const RawTradeChallengeData = mongoose.model('TradeChallengeData', TradeChallengeDataSchema);
+const RawChallengeAccount = mongoose.model('ChallengeAccount', ChallengeAccountSchema);
+const RawChallengeProgress = mongoose.model('ChallengeProgress', ChallengeProgressSchema);
+const RawChallengeTrade = mongoose.model('ChallengeTrade', ChallengeTradeSchema);
+
+// --- SEQUELIZE COMPATIBILITY LAYER ---
+
+function convertWhere(where) {
+  if (!where) return {};
+  const query = {};
+
+  const symbols = Object.getOwnPropertySymbols(where);
+  for (const sym of symbols) {
+    if (sym.toString().includes('or')) {
+      return { $or: where[sym].map(convertWhere) };
     }
-  },
-  lotSize: {
-    type: DataTypes.DECIMAL(12, 2),
-    defaultValue: 0.01,
-  },
-  entryPrice: {
-    type: DataTypes.DECIMAL(12, 4),
-    allowNull: false,
-  },
-  tpPrice: {
-    type: DataTypes.DECIMAL(12, 4),
-    allowNull: false,
-  },
-  slPrice: {
-    type: DataTypes.DECIMAL(12, 4),
-    allowNull: false,
-  },
-  profitLoss: {
-    type: DataTypes.DECIMAL(12, 2),
-    defaultValue: 0.00,
-  },
-  result: {
-    type: DataTypes.STRING,
-    defaultValue: 'PENDING', // 'PENDING', 'WIN', 'LOSS', 'VIOLATION'
-  },
-  openedAt: {
-    type: DataTypes.DATE,
-    defaultValue: DataTypes.NOW,
-  },
-  closedAt: {
-    type: DataTypes.DATE,
-    allowNull: true,
   }
-}, {
-  timestamps: false,
-  tableName: 'ChallengeTrades',
-});
 
-// Establish Model Associations
-User.hasMany(Trade, { as: 'tradesList', foreignKey: 'userId', onDelete: 'CASCADE' });
-Trade.belongsTo(User, { foreignKey: 'userId' });
+  for (const key of Object.keys(where)) {
+    let val = where[key];
+    if (key === '$or' || key === 'or') {
+      query['$or'] = val.map(convertWhere);
+      continue;
+    }
 
-User.hasMany(Transaction, { as: 'transactionsList', foreignKey: 'userId', onDelete: 'CASCADE' });
-Transaction.belongsTo(User, { foreignKey: 'userId' });
+    if (key === 'id') {
+      query['_id'] = val;
+      continue;
+    }
 
-User.hasOne(Verification, { as: 'verification', foreignKey: 'userId', onDelete: 'CASCADE' });
-Verification.belongsTo(User, { foreignKey: 'userId' });
+    if (val && typeof val === 'object' && !Array.isArray(val) && !(val instanceof Date)) {
+      const innerSymbols = Object.getOwnPropertySymbols(val);
+      const innerQuery = {};
+      let hasSymbol = false;
+      for (const sym of innerSymbols) {
+        if (sym.toString().includes('in')) {
+          innerQuery['$in'] = val[sym];
+          hasSymbol = true;
+        }
+      }
+      if (hasSymbol) {
+        query[key] = innerQuery;
+      } else {
+        query[key] = val;
+      }
+    } else {
+      query[key] = val;
+    }
+  }
+  return query;
+}
 
-User.hasOne(ChallengeData, { as: 'challengeData', foreignKey: 'userId', onDelete: 'CASCADE' });
-ChallengeData.belongsTo(User, { foreignKey: 'userId' });
+function applyIncludes(query, include) {
+  if (!include) return query;
+  
+  const processInclude = (inc) => {
+    if (typeof inc === 'string') {
+      return inc;
+    }
+    
+    const popObj = { path: inc.as || inc.association };
+    if (inc.include) {
+      popObj.populate = inc.include.map(processInclude);
+    }
+    return popObj;
+  };
 
-User.hasOne(TradeChallengeData, { as: 'tradeChallengeData', foreignKey: 'userId', onDelete: 'CASCADE' });
-TradeChallengeData.belongsTo(User, { foreignKey: 'userId' });
+  const populateArgs = include.map(processInclude);
+  return query.populate(populateArgs);
+}
 
-// 3-Stage Challenge Associations
-User.hasMany(ChallengeAccount, { as: 'challengeAccounts', foreignKey: 'userId', onDelete: 'CASCADE' });
-ChallengeAccount.belongsTo(User, { foreignKey: 'userId' });
+function patchDoc(doc) {
+  if (!doc) return null;
 
-ChallengeAccount.hasOne(ChallengeProgress, { as: 'progress', foreignKey: 'accountId', onDelete: 'CASCADE' });
-ChallengeProgress.belongsTo(ChallengeAccount, { foreignKey: 'accountId' });
+  if (Array.isArray(doc)) {
+    return doc.map(patchDoc);
+  }
 
-ChallengeAccount.hasMany(ChallengeTrade, { as: 'trades', foreignKey: 'accountId', onDelete: 'CASCADE' });
-ChallengeTrade.belongsTo(ChallengeAccount, { foreignKey: 'accountId' });
+  // Ensure `id` is present on the plain object/instance
+  if (doc._id && !doc.id) {
+    Object.defineProperty(doc, 'id', {
+      get() { return this._id; },
+      set(v) { this._id = v; }
+    });
+  }
+
+  // Sequelize reload method
+  doc.reload = async function() {
+    const refetched = await doc.constructor.findById(this._id);
+    if (refetched) {
+      this._doc = refetched._doc;
+    }
+    return this;
+  };
+
+  // Sequelize update method
+  doc.update = async function(updateData) {
+    this.set(updateData);
+    return await this.save();
+  };
+
+  return doc;
+}
+
+function wrapModel(Model) {
+  const wrapped = {
+    prototype: Model.prototype,
+    
+    findOne: async (options = {}) => {
+      const q = convertWhere(options.where);
+      let query = Model.findOne(q);
+      if (options.include) {
+        query = applyIncludes(query, options.include);
+      }
+      const doc = await query.exec();
+      return patchDoc(doc);
+    },
+
+    findByPk: async (id, options = {}) => {
+      if (!id) return null;
+      let query = Model.findById(id);
+      if (options.include) {
+        query = applyIncludes(query, options.include);
+      }
+      const doc = await query.exec();
+      return patchDoc(doc);
+    },
+
+    findAll: async (options = {}) => {
+      const q = convertWhere(options.where);
+      let query = Model.find(q);
+      if (options.include) {
+        query = applyIncludes(query, options.include);
+      }
+      if (options.limit) {
+        query = query.limit(options.limit);
+      }
+      if (options.order) {
+        const sortObj = {};
+        for (let orderItem of options.order) {
+          const field = orderItem[0] === 'id' ? '_id' : orderItem[0];
+          const direction = orderItem[1] && orderItem[1].toUpperCase() === 'DESC' ? -1 : 1;
+          sortObj[field] = direction;
+        }
+        query = query.sort(sortObj);
+      }
+      const docs = await query.exec();
+      return docs.map(patchDoc);
+    },
+
+    create: async (data, options = {}) => {
+      const doc = new Model(data);
+      // Generate ID if missing and is schema with string primary key
+      if (!doc._id && (Model.modelName === 'User' || Model.modelName === 'ChallengeAccount')) {
+        doc._id = uuidv4();
+      } else if (!doc._id) {
+        // Verification, ChallengeData, etc. might use userId as _id
+        if (data.userId) {
+          doc._id = data.userId;
+        }
+      }
+      await doc.save();
+      return patchDoc(doc);
+    },
+
+    update: async (data, options = {}) => {
+      const q = convertWhere(options.where);
+      const res = await Model.updateMany(q, { $set: data });
+      return [res.modifiedCount];
+    }
+  };
+
+  return wrapped;
+}
+
+const User = wrapModel(RawUser);
+const Trade = wrapModel(RawTrade);
+const Transaction = wrapModel(RawTransaction);
+const Verification = wrapModel(RawVerification);
+const ChallengeData = wrapModel(RawChallengeData);
+const TradeChallengeData = wrapModel(RawTradeChallengeData);
+const ChallengeAccount = wrapModel(RawChallengeAccount);
+const ChallengeProgress = wrapModel(RawChallengeProgress);
+const ChallengeTrade = wrapModel(RawChallengeTrade);
 
 module.exports = {
   sequelize,
