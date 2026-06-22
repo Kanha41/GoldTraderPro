@@ -14,12 +14,6 @@ import ChallengeScreen from './components/ChallengeScreen';
 import HistoryScreen from './components/HistoryScreen';
 import './index.css';
 
-const ProtectedRoute = ({ children }) => {
-  const { user } = useAppContext();
-  if (!user) return <Navigate to="/login" />;
-  return children;
-};
-
 const AdminRoute = ({ children }) => {
   const { user } = useAppContext();
   if (!user) return <Navigate to="/login" />;
@@ -34,26 +28,10 @@ const MainApp = () => {
         <Route path="/" element={<TradingPlatform />} />
         <Route path="/login" element={<Auth />} />
         <Route path="/unauthorized" element={<Unauthorized />} />
-        <Route path="/profile" element={
-          <ProtectedRoute>
-            <ProfileDashboard />
-          </ProtectedRoute>
-        } />
-        <Route path="/challenge" element={
-          <ProtectedRoute>
-            <ChallengeScreen />
-          </ProtectedRoute>
-        } />
-        <Route path="/history" element={
-          <ProtectedRoute>
-            <HistoryScreen />
-          </ProtectedRoute>
-        } />
-        <Route path="/news" element={
-          <ProtectedRoute>
-            <NewsScreen />
-          </ProtectedRoute>
-        } />
+        <Route path="/profile" element={<ProfileDashboard />} />
+        <Route path="/challenge" element={<ChallengeScreen />} />
+        <Route path="/history" element={<HistoryScreen />} />
+        <Route path="/news" element={<NewsScreen />} />
         <Route path="/admin" element={
           <AdminRoute>
             <AdminPanel />

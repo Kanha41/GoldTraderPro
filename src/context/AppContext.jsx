@@ -133,9 +133,13 @@ export const AppProvider = ({ children }) => {
         let shouldComplete = false;
         let reward = 0;
         
+        const lots = parseFloat(trade.amount) || 1;
+        const tpDistance = Math.abs(tp - entryPrice);
+        const dynamicReward = tpDistance > 0 ? tpDistance * lots : 140 * lots;
+
         if (trade.type === 'BUY') {
           if (!isNaN(tp) && tp > 0 && livePrice >= tp) {
-            reward = entryPrice > 0 ? 140 : 80;
+            reward = dynamicReward;
             shouldComplete = true;
           } else if (!isNaN(sl) && sl > 0 && livePrice <= sl) {
             reward = 0;
@@ -143,7 +147,7 @@ export const AppProvider = ({ children }) => {
           }
         } else if (trade.type === 'SELL') {
           if (!isNaN(tp) && tp > 0 && livePrice <= tp) {
-            reward = entryPrice > 0 ? 140 : 80;
+            reward = dynamicReward;
             shouldComplete = true;
           } else if (!isNaN(sl) && sl > 0 && livePrice >= sl) {
             reward = 0;
@@ -649,7 +653,9 @@ export const AppProvider = ({ children }) => {
         body: JSON.stringify({
           side: tradeDetails.side,
           lotSize: tradeDetails.lotSize,
-          currentPrice: tradeDetails.currentPrice
+          currentPrice: tradeDetails.currentPrice,
+          tpPips: tradeDetails.tpPips,
+          slPips: tradeDetails.slPips
         })
       });
       const data = await res.json();

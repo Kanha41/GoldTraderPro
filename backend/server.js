@@ -636,7 +636,15 @@ app.post('/api/trades/complete', authenticateToken, async (req, res) => {
       return res.status(404).json({ success: false, message: 'Trade not found.' });
     }
 
-    const reward = profit > 0 ? 140.00 : 0.00;
+    // Dynamic P&L: 1 pip = $1 USD per lot (same as Challenge).
+    // tpDistance / slDistance is stored as absolute price movement.
+    const tpDistance = Math.abs(parseFloat(trade.takeProfit) - parseFloat(trade.price));
+    const slDistance = Math.abs(parseFloat(trade.stopLoss)   - parseFloat(trade.price));
+    const lots       = parseFloat(trade.amount) || 1;
+    // On a win, credit the TP pip value; on a loss, credit 0 (entry cost already deducted).
+    const reward = profit > 0
+      ? (isNaN(tpDistance) || tpDistance === 0 ? 140.00 : tpDistance * lots)
+      : 0.00;
     
     // Update Trade
     trade.status = 'CLOSED';
@@ -1212,7 +1220,7 @@ app.post('/api/challenge-account/enroll', authenticateToken, async (req, res) =>
 
 // Add a trade under 3-Stage Challenge
 app.post('/api/challenge-account/trade/add', authenticateToken, async (req, res) => {
-  const { side, lotSize, currentPrice } = req.body;
+  const { side, lotSize, currentPrice, tpPips = 8, slPips = 3 } = req.body;
   const { Op } = require('./sequelize');
   const t = await sequelize.transaction();
 
@@ -1233,11 +1241,17 @@ app.post('/api/challenge-account/trade/add', authenticateToken, async (req, res)
       return res.status(400).json({ success: false, message: 'No active challenge account found. Please enroll first.' });
     }
 
-    // XAUUSD only (implied/hardcoded)
+    const tpDistance = parseFloat(tpPips);
+    const slDistance = parseFloat(slPips);
 
-    // Entry at exact current price, 1 pip = $1.00 price movement
-    const tpDistance = 5.00;  // 5 pips = $5
-    const slDistance = 2.00;  // 2 pips = $2
+    if (tpDistance < 8) {
+      await t.rollback();
+      return res.status(400).json({ success: false, message: 'Take Profit must be at least 8 pips.' });
+    }
+    if (slDistance > 3) {
+      await t.rollback();
+      return res.status(400).json({ success: false, message: 'Stop Loss must be at most 3 pips.' });
+    }
 
     const priceNum = parseFloat(currentPrice);
     const entryPrice = priceNum;
@@ -1309,9 +1323,12 @@ app.post('/api/challenge-account/trade/complete', authenticateToken, async (req,
     // Set closed timestamp
     trade.closedAt = new Date();
     
-    // Calculate profit/loss: 1 pip = $1 (per 1 lot size)
-    // TP = 5 pips = +$5, SL = 2 pips = -$2 (multiplied by lot size)
-    const profitLoss = (isWin ? 5.00 : -2.00) * parseFloat(trade.lotSize);
+    // Calculate profit/loss dynamically based on actual TP/SL set
+    const tpDistance = Math.abs(parseFloat(trade.tpPrice) - parseFloat(trade.entryPrice));
+    const slDistance = Math.abs(parseFloat(trade.slPrice) - parseFloat(trade.entryPrice));
+    
+    // In our system, 1 pip = $1.00 price movement
+    const profitLoss = (isWin ? tpDistance : -slDistance) * parseFloat(trade.lotSize);
 
     trade.result = isWin ? 'WIN' : 'LOSS';
     trade.profitLoss = profitLoss;
@@ -1331,52 +1348,32 @@ app.post('/api/challenge-account/trade/complete', authenticateToken, async (req,
       if (challengeAccount.currentStage === 1) {
         // Stage 1 – Profit Target: Balance >= $1,300
         if (newBalance >= 1300.00) {
-          challengeAccount.currentStage = 2;
-          challengeAccount.balance = 1000.00; // Reset balance for Stage 2
+          // Skip Stage 2 entirely, go directly to Stage 3 (Triplet)
+          challengeAccount.currentStage = 3;
+          challengeAccount.balance = 1000.00;
           challengeAccount.equity = 1000.00;
           challengeAccount.highestBalance = 1000.00;
 
-          progress.stage = 2;
+          progress.stage = 3;
           progress.wins = 0;
           progress.losses = 0;
           progress.tradeCount = 0;
           progress.currentStreak = 0;
+          progress.tripletAttempts = 0;
           await progress.save({ transaction: t });
         }
-      } else if (challengeAccount.currentStage === 2) {
-        // Stage 2 – Consistency Test: 5 Wins from first 8 closed trades
-        progress.tradeCount += 1;
-        if (isWin) {
-          progress.wins += 1;
-        } else {
-          progress.losses += 1;
-        }
-        await progress.save({ transaction: t });
-
-        if (progress.tradeCount === 8) {
-          if (progress.wins >= 5) {
-            challengeAccount.currentStage = 3;
-            challengeAccount.balance = 1000.00; // Reset balance for Stage 3
-            challengeAccount.equity = 1000.00;
-            challengeAccount.highestBalance = 1000.00;
-
-            progress.stage = 3;
-            progress.currentStreak = 0;
-            progress.wins = 0;
-            progress.losses = 0;
-            progress.tradeCount = 0;
-            await progress.save({ transaction: t });
-          } else {
-            challengeAccount.challengeStatus = 'FAILED';
-          }
-        }
       } else if (challengeAccount.currentStage === 3) {
-        // Stage 3 – Consecutive Winners: 3 consecutive wins
+        // Stage 3 – Triplet Trade: Win 3 consecutive trades.
+        // User gets 2 attempts (each attempt = a set of 3 trades).
+        // A single loss within the triplet = failed attempt.
+        progress.tradeCount += 1;
+
         if (isWin) {
           progress.currentStreak += 1;
           await progress.save({ transaction: t });
 
           if (progress.currentStreak >= 3) {
+            // PASSED the challenge!
             challengeAccount.challengeStatus = 'PASSED';
 
             // Create Transaction record for Challenge Reward (Admin approval)
@@ -1384,25 +1381,33 @@ app.post('/api/challenge-account/trade/complete', authenticateToken, async (req,
               userId: userObj.id,
               isDemo: false,
               type: 'CHALLENGE_REWARD',
-              amount: 15000.00, // ₹15,000 cash reward
+              amount: 800.00, // ₹800 cash reward
               status: 'PENDING',
               date: new Date(),
-              label: `3-Stage Challenge Prize for ${userObj.username}`,
+              label: `Challenge Prize for ${userObj.username}`,
               challengeType: '3_STAGE'
             }, { transaction: t });
           }
         } else {
-          // Failure in Stage 3: Return to Stage 2
-          challengeAccount.currentStage = 2;
-          challengeAccount.balance = 1000.00; // Reset balance
-          challengeAccount.equity = 1000.00;
-          challengeAccount.highestBalance = 1000.00;
-
-          progress.stage = 2;
+          // Loss in triplet – count as a failed attempt
+          progress.tripletAttempts += 1;
           progress.currentStreak = 0;
-          progress.wins = 0;
-          progress.losses = 0;
           progress.tradeCount = 0;
+
+          if (progress.tripletAttempts >= 2) {
+            // Both attempts exhausted – reset back to Stage 1
+            challengeAccount.currentStage = 1;
+            challengeAccount.balance = 1000.00;
+            challengeAccount.equity = 1000.00;
+            challengeAccount.highestBalance = 1000.00;
+
+            progress.stage = 1;
+            progress.wins = 0;
+            progress.losses = 0;
+            progress.tradeCount = 0;
+            progress.currentStreak = 0;
+            progress.tripletAttempts = 0;
+          }
           await progress.save({ transaction: t });
         }
       }

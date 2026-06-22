@@ -171,10 +171,10 @@ const ChallengeScreen = () => {
                 marginBottom: '8px'
               }}
             >
-              Target Reward: ₹15,000 Cash Prize + Funded Status
+              Target Reward: ₹800 Cash Prize + Funded Status
             </span>
             <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '16px', lineHeight: '1.45' }}>
-              Grow balance from $1,000 to $1,300, pass consistency win-rates, and get a 3-consecutive-win streak. 1 Pip = $1 USD.
+              Grow balance from $1,000 to $1,300, then win a Triplet Trade (3 consecutive wins). You get 2 attempts. 1 Pip = $1 USD.
             </p>
 
             {activeChallengeAccount ? (
@@ -204,20 +204,16 @@ const ChallengeScreen = () => {
                       </div>
                     </div>
                   )}
-                  {activeChallengeAccount.currentStage === 2 && activeChallengeAccount.progress && (
-                    <div style={{ fontSize: '12px', marginTop: '4px' }}>
-                      <span style={{ color: 'var(--text-secondary)' }}>Win Rate Test:</span> <strong>{activeChallengeAccount.progress.wins} Wins / {activeChallengeAccount.progress.losses} Losses</strong> ({activeChallengeAccount.progress.tradeCount}/8 Trades closed)
-                    </div>
-                  )}
                   {activeChallengeAccount.currentStage === 3 && activeChallengeAccount.progress && (
                     <div style={{ fontSize: '12px', marginTop: '4px' }}>
-                      <span style={{ color: 'var(--text-secondary)' }}>Streak:</span> <strong style={{ color: '#f59e0b' }}>{activeChallengeAccount.progress.currentStreak} of 3 wins</strong> in a row
+                      <span style={{ color: 'var(--text-secondary)' }}>Triplet Trade:</span> <strong style={{ color: '#f59e0b' }}>{activeChallengeAccount.progress.currentStreak} of 3 wins</strong> in a row<br/>
+                      <span style={{ color: 'var(--text-secondary)' }}>Attempt:</span> <strong>{(activeChallengeAccount.progress.tripletAttempts || 0) + 1} / 2</strong>
                     </div>
                   )}
                 </div>
                 {activeChallengeAccount.challengeStatus === 'PASSED' && (
                   <div style={{ background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.25)', borderRadius: '10px', padding: '12px 14px', marginBottom: '16px', fontSize: '12px', color: 'var(--buy-color)', fontWeight: 'bold' }}>
-                    Congratulations! You completed the challenge. A reward of ₹15,000 was added and is pending admin approval!
+                    Congratulations! You completed the challenge. A reward of ₹800 was added and is pending admin approval!
                   </div>
                 )}
               </>
@@ -240,6 +236,10 @@ const ChallengeScreen = () => {
               {!activeChallengeAccount && (
                 <button
                   onClick={async () => {
+                    if (!user) {
+                      navigate('/login');
+                      return;
+                    }
                     if (window.confirm("Enroll in the 3-Stage Funded Challenge? This will start a new evaluation account starting at $1,000. Proceed?")) {
                       const res = await enrollChallengeAccount();
                       if (res && res.success) {

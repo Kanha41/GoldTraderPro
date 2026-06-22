@@ -28,6 +28,10 @@ const TradingPlatform = () => {
   const [toast, setToast] = useState(null);
   
   const [quantity, setQuantity] = useState(1);
+  const [tpPips, setTpPips] = useState(8);
+  const [slPips, setSlPips] = useState(3);
+  const [realTpPips, setRealTpPips] = useState(7);
+  const [realSlPips, setRealSlPips] = useState(4);
   const [showDeposit, setShowDeposit] = useState(false);
   const [isProcessingOrder, setIsProcessingOrder] = useState(false);
   const isWeekend = [0,6].includes(new Date().getDay());
@@ -74,10 +78,23 @@ const TradingPlatform = () => {
         return;
       }
 
+      if (tpPips < 8) {
+        alert("Take Profit must be at least 8 pips.");
+        setIsProcessingOrder(false);
+        return;
+      }
+      if (slPips > 3) {
+        alert("Stop Loss must be at most 3 pips.");
+        setIsProcessingOrder(false);
+        return;
+      }
+
       const res = await addChallengeTrade({
         side: type,
         lotSize: quantity,
-        currentPrice: livePrice
+        currentPrice: livePrice,
+        tpPips: tpPips,
+        slPips: slPips
       });
 
       if (res && res.success) {
@@ -85,29 +102,39 @@ const TradingPlatform = () => {
         setTimeout(() => setToast(null), 4000);
       }
     } else {
+      if (realTpPips < 7) {
+        alert("Take Profit must be at least 7 pips.");
+        setIsProcessingOrder(false);
+        return;
+      }
+      if (realSlPips > 4) {
+        alert("Stop Loss must be at most 4 pips.");
+        setIsProcessingOrder(false);
+        return;
+      }
+
       if (balance < (80 * quantity)) {
         alert(`Insufficient balance. You need at least ${80 * quantity} Rs to place an order of ${quantity} lots.`);
         setIsProcessingOrder(false);
         return;
       }
 
-      const tpDistance = 7;
-      const slDistance = 4;
-
       // Entry at exact current price
       const entryPrice = livePrice;
 
       await addTrade({
-        pair: 'PAXG/USDT',
+        pair: 'XAUUSD',
         type,
         amount: quantity,
         price: entryPrice,
-        takeProfit: type === 'BUY' ? entryPrice + tpDistance : entryPrice - tpDistance,
-        stopLoss:   type === 'BUY' ? entryPrice - slDistance : entryPrice + slDistance,
+        takeProfit: type === 'BUY' ? entryPrice + realTpPips : entryPrice - realTpPips,
+        stopLoss:   type === 'BUY' ? entryPrice - realSlPips : entryPrice + realSlPips,
+        tpPips: realTpPips,
+        slPips: realSlPips,
         status: 'OPEN'
       });
       
-      setToast({ message: `Order of ${quantity} placed at ${entryPrice.toFixed(2)}`, type: 'success' });
+      setToast({ message: `Order of ${quantity} lots placed at ${entryPrice.toFixed(2)}`, type: 'success' });
       setTimeout(() => setToast(null), 4000);
     }
     
@@ -166,27 +193,22 @@ const TradingPlatform = () => {
             </div>
 
             <h2 style={{ fontSize: '30px', fontWeight: '800', color: '#fff', marginBottom: '10px', letterSpacing: '-0.03em' }}>
-              3-Stage Funded Challenge
+              Funded Challenge
             </h2>
             <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '30px', lineHeight: '1.6' }}>
-              Prove your trading consistency across 3 distinct evaluation stages. Pass all stages to receive a funded account with real profit payouts!
+              Prove your trading skill! Pass the Profit Target then win a Triplet Trade to earn ₹800 Cash Prize + Funded Status.
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '35px', textAlign: 'left' }}>
               <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--panel-border)', borderRadius: '16px', padding: '14px' }}>
-                <span style={{ fontSize: '10px', color: '#38bdf8', fontWeight: 'bold', display: 'block', textTransform: 'uppercase', marginBottom: '6px' }}>Stage 1</span>
-                <strong style={{ fontSize: '14px', color: '#fff', display: 'block', marginBottom: '4px' }}>Profit Target</strong>
-                <span style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: '1.4', display: 'block' }}>Grow account from $1,000 to $1,300 (+30% profit)</span>
+                <span style={{ fontSize: '10px', color: '#38bdf8', fontWeight: 'bold', display: 'block', textTransform: 'uppercase', marginBottom: '6px' }}>Stage 1 — Profit Target</span>
+                <strong style={{ fontSize: '14px', color: '#fff', display: 'block', marginBottom: '4px' }}>Grow to $1,300</strong>
+                <span style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: '1.4', display: 'block' }}>Start with $1,000 and grow your balance to $1,300 (+30% profit). TP min 8 pips, SL max 3 pips.</span>
               </div>
               <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--panel-border)', borderRadius: '16px', padding: '14px' }}>
-                <span style={{ fontSize: '10px', color: '#38bdf8', fontWeight: 'bold', display: 'block', textTransform: 'uppercase', marginBottom: '6px' }}>Stage 2</span>
-                <strong style={{ fontSize: '14px', color: '#fff', display: 'block', marginBottom: '4px' }}>Consistency</strong>
-                <span style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: '1.4', display: 'block' }}>Win at least 5 out of your first 8 completed trades</span>
-              </div>
-              <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--panel-border)', borderRadius: '16px', padding: '14px' }}>
-                <span style={{ fontSize: '10px', color: '#38bdf8', fontWeight: 'bold', display: 'block', textTransform: 'uppercase', marginBottom: '6px' }}>Stage 3</span>
-                <strong style={{ fontSize: '14px', color: '#fff', display: 'block', marginBottom: '4px' }}>Consecutive</strong>
-                <span style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: '1.4', display: 'block' }}>Secure 3 consecutive winning trades in a row</span>
+                <span style={{ fontSize: '10px', color: '#f59e0b', fontWeight: 'bold', display: 'block', textTransform: 'uppercase', marginBottom: '6px' }}>Stage 2 — Triplet Trade</span>
+                <strong style={{ fontSize: '14px', color: '#fff', display: 'block', marginBottom: '4px' }}>Win 3 Consecutive Trades</strong>
+                <span style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: '1.4', display: 'block' }}>Trade a triplet (3 trades). All 3 must be consecutive wins. You get 2 attempts. If both fail, you restart from Stage 1.</span>
               </div>
             </div>
 
@@ -410,12 +432,14 @@ const TradingPlatform = () => {
             </div>
           )}
 
-          {/* 3-Stage Progress Dashboard */}
+          {/* Challenge Progress Dashboard */}
           {accountType === 'CHALLENGE' && activeChallengeAccount && (
             <div className="glass-panel" style={{ borderRadius: '16px', border: '1px solid rgba(56, 189, 248, 0.25)', background: 'rgba(56, 189, 248, 0.03)', padding: '16px', marginBottom: '20px', textAlign: 'left' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
                 <Trophy size={16} color="#38bdf8" />
-                <strong style={{ fontSize: '13px', color: '#fff' }}>Stage {activeChallengeAccount.currentStage} Progress Dashboard</strong>
+                <strong style={{ fontSize: '13px', color: '#fff' }}>
+                  {activeChallengeAccount.currentStage === 1 ? 'Stage 1 — Profit Target' : 'Stage 2 — Triplet Trade'}
+                </strong>
               </div>
               
               {activeChallengeAccount.currentStage === 1 && (
@@ -435,56 +459,6 @@ const TradingPlatform = () => {
                   </div>
                   <span style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block', marginTop: '6px' }}>
                     Grow balance from $1,000 to $1,300.
-                  </span>
-                </div>
-              )}
-
-              {activeChallengeAccount.currentStage === 2 && activeChallengeAccount.progress && (
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
-                    <span style={{ color: 'var(--text-secondary)' }}>Consistency Target: 5 Wins out of 8 trades</span>
-                    <span style={{ color: '#38bdf8', fontWeight: 'bold' }}>{activeChallengeAccount.progress.wins} W - {activeChallengeAccount.progress.losses} L ({activeChallengeAccount.progress.tradeCount}/8)</span>
-                  </div>
-                  <div style={{ display: 'flex', gap: '4px', margin: '8px 0' }}>
-                    {Array.from({ length: 8 }).map((_, idx) => {
-                      let color = 'rgba(255,255,255,0.05)';
-                      let border = '1px solid var(--panel-border)';
-                      if (idx < activeChallengeAccount.progress.tradeCount) {
-                        const stage2Trades = [...trades].filter(t => t.result !== 'PENDING').slice(0, activeChallengeAccount.progress.tradeCount).reverse();
-                        const thisTrade = stage2Trades[idx];
-                        if (thisTrade) {
-                          if (thisTrade.result === 'WIN') {
-                            color = 'rgba(16, 185, 129, 0.2)';
-                            border = '1px solid var(--buy-color)';
-                          } else {
-                            color = 'rgba(239, 68, 68, 0.2)';
-                            border = '1px solid var(--sell-color)';
-                          }
-                        }
-                      }
-                      return (
-                        <div key={idx} style={{
-                          flex: 1,
-                          height: '16px',
-                          background: color,
-                          border,
-                          borderRadius: '3px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: '9px',
-                          fontWeight: 'bold',
-                          color: '#fff'
-                        }}>
-                          {idx < activeChallengeAccount.progress.tradeCount ? (
-                            ([...trades].filter(t => t.result !== 'PENDING').slice(0, activeChallengeAccount.progress.tradeCount).reverse()[idx]?.result === 'WIN' ? 'W' : 'L')
-                          ) : ''}
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                    Complete 8 trades. You need at least 5 wins to pass. Current: {activeChallengeAccount.progress.wins} Wins.
                   </span>
                 </div>
               )}
@@ -510,9 +484,10 @@ const TradingPlatform = () => {
                       );
                     })}
                   </div>
-                  <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                    Wins build streak. A single loss resets streak and returns you to Stage 2.
-                  </span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-secondary)' }}>
+                    <span>Attempt {(activeChallengeAccount.progress.tripletAttempts || 0) + 1} of 2</span>
+                    <span>A loss resets streak. 2 failed attempts = restart Stage 1.</span>
+                  </div>
                 </div>
               )}
             </div>
@@ -533,21 +508,64 @@ const TradingPlatform = () => {
             </div>
             
             {accountType === 'CHALLENGE' ? (
-              <div style={{ marginTop: '15px', marginBottom: '25px', padding: '12px', background: 'rgba(56, 189, 248, 0.04)', border: '1px solid rgba(56, 189, 248, 0.1)', borderRadius: '8px', fontSize: '12px', color: 'var(--text-secondary)', textAlign: 'left', lineHeight: '1.5' }}>
-                Instrument: <strong>XAUUSD only</strong><br/>
-                Auto TP: <strong>5 Pips ($5.00 price move)</strong><br/>
-                Auto SL: <strong>2 Pips ($2.00 price move)</strong><br/>
-                1 Pip = <strong>$1 USD (per 1 lot)</strong><br/>
-                Potential Profit (TP): <strong style={{ color: 'var(--buy-color)' }}>+${(5.00 * quantity).toFixed(2)} USD</strong><br/>
-                Potential Loss (SL): <strong style={{ color: 'var(--sell-color)' }}>-${(2.00 * quantity).toFixed(2)} USD</strong>
-              </div>
+              <>
+                <div className="input-group" style={{ marginTop: '15px' }}>
+                  <label>Take Profit (Pips) - Min 8</label>
+                  <input 
+                    type="number" 
+                    className="custom-input" 
+                    value={tpPips} 
+                    onChange={(e) => setTpPips(Number(e.target.value))}
+                    min="8"
+                  />
+                </div>
+                <div className="input-group" style={{ marginTop: '15px' }}>
+                  <label>Stop Loss (Pips) - Max 3</label>
+                  <input 
+                    type="number" 
+                    className="custom-input" 
+                    value={slPips} 
+                    onChange={(e) => setSlPips(Number(e.target.value))}
+                    max="3"
+                  />
+                </div>
+                <div style={{ marginTop: '15px', marginBottom: '25px', padding: '12px', background: 'rgba(56, 189, 248, 0.04)', border: '1px solid rgba(56, 189, 248, 0.1)', borderRadius: '8px', fontSize: '12px', color: 'var(--text-secondary)', textAlign: 'left', lineHeight: '1.5' }}>
+                  Instrument: <strong>XAUUSD only</strong><br/>
+                  1 Pip = <strong>$1 USD (per 1 lot)</strong><br/>
+                  Potential Profit (TP): <strong style={{ color: 'var(--buy-color)' }}>+${(tpPips * 1 * quantity).toFixed(2)} USD</strong><br/>
+                  Potential Loss (SL): <strong style={{ color: 'var(--sell-color)' }}>-${(slPips * 1 * quantity).toFixed(2)} USD</strong>
+                </div>
+              </>
             ) : (
-              <div style={{ marginTop: '15px', marginBottom: '25px', padding: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', fontSize: '13px', color: 'var(--text-secondary)' }}>
-                Order Amount: <strong>{80 * quantity} Rs</strong><br/>
-                Auto TP: 7 Points<br/>
-                Auto SL: 4 Points<br/>
-                Profit on TP: {140 * quantity} Rs
-              </div>
+              <>
+                <div className="input-group" style={{ marginTop: '15px' }}>
+                  <label>Take Profit (Pips) - Min 7</label>
+                  <input
+                    type="number"
+                    className="custom-input"
+                    value={realTpPips}
+                    onChange={(e) => setRealTpPips(Number(e.target.value))}
+                    min="7"
+                  />
+                </div>
+                <div className="input-group" style={{ marginTop: '15px' }}>
+                  <label>Stop Loss (Pips) - Max 4</label>
+                  <input
+                    type="number"
+                    className="custom-input"
+                    value={realSlPips}
+                    onChange={(e) => setRealSlPips(Number(e.target.value))}
+                    max="4"
+                  />
+                </div>
+                <div style={{ marginTop: '15px', marginBottom: '25px', padding: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', fontSize: '12px', color: 'var(--text-secondary)', textAlign: 'left', lineHeight: '1.6' }}>
+                  Instrument: <strong>XAUUSD</strong><br/>
+                  Order Amount: <strong>{80 * quantity} Rs</strong><br/>
+                  1 Pip = <strong>$1 USD (per 1 lot)</strong><br/>
+                  Potential Profit (TP): <strong style={{ color: 'var(--buy-color)' }}>+${(realTpPips * quantity).toFixed(2)} USD</strong><br/>
+                  Potential Loss (SL): <strong style={{ color: 'var(--sell-color)' }}>-${(realSlPips * quantity).toFixed(2)} USD</strong>
+                </div>
+              </>
             )}
 
             <div className="trade-buttons">

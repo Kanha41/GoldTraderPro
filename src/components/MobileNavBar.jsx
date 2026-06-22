@@ -5,7 +5,6 @@ import { useAppContext } from '../context/useAppContext';
 
 const MobileNavBar = ({ activeTab }) => {
   const navigate = useNavigate();
-  const { user } = useAppContext();
 
   const tabs = [
     { id: 'trade', label: 'Home', icon: Home, path: '/' },
@@ -15,11 +14,7 @@ const MobileNavBar = ({ activeTab }) => {
   ];
 
   const handleTabClick = (tab) => {
-    if (tab.id !== 'trade' && !user) {
-      navigate('/login');
-    } else {
-      navigate(tab.path);
-    }
+    navigate(tab.path);
   };
 
   return (

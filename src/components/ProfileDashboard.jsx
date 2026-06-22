@@ -162,6 +162,10 @@ const ProfileDashboard = () => {
   };
 
   const handleRowClick = (item) => {
+    if (!user && item !== 'about' && item !== 'tutorials') {
+      navigate('/login');
+      return;
+    }
     if (accountType === 'CHALLENGE' && (item === 'deposit' || item === 'withdraw')) {
       alert("Deposits and withdrawals are disabled for Challenge accounts. Use Real Account for deposits/withdrawals.");
       return;
@@ -607,14 +611,14 @@ const ProfileDashboard = () => {
               <button onClick={() => setShowTransactionsModal(false)} className="modal-close"><X size={22} /></button>
             </div>
             
-            {(!(accountType === 'DEMO' ? currentUserRecord?.demoTransactions : currentUserRecord?.transactions) || (accountType === 'DEMO' ? (currentUserRecord.demoTransactions || []).length : (currentUserRecord.transactions || []).length) === 0) ? (
+            {(!(accountType === 'DEMO' ? currentUserRecord?.demoTransactions : currentUserRecord?.transactions) || (accountType === 'DEMO' ? (currentUserRecord?.demoTransactions || []).length : (currentUserRecord?.transactions || []).length) === 0) ? (
               <div style={{ padding: '40px 20px', textAlign: 'center' }}>
                 <p style={{ color: 'var(--text-secondary)' }}>
                   No transactions recorded yet.<br />Use Deposit to fund your account.
                 </p>
               </div>
             ) : (() => {
-              const allTxs = accountType === 'DEMO' ? (currentUserRecord.demoTransactions || []) : (currentUserRecord.transactions || []);
+              const allTxs = accountType === 'DEMO' ? (currentUserRecord?.demoTransactions || []) : (currentUserRecord?.transactions || []);
               const pendingTxs = [...allTxs]
                 .filter(tx => tx.status === 'PENDING')
                 .sort((a, b) => new Date(b.date) - new Date(a.date));
