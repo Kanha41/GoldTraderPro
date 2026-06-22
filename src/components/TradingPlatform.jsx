@@ -47,6 +47,10 @@ const TradingPlatform = () => {
   }, [accountType]);
 
   const handleOrder = async (type) => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
     if (isProcessingOrder) return;
     
     if (isWeekend) {
@@ -200,6 +204,10 @@ const TradingPlatform = () => {
 
             <button
               onClick={async () => {
+                if (!user) {
+                  navigate('/login');
+                  return;
+                }
                 if (window.confirm("Enroll in the 3-Stage Funded Challenge? This will start a new evaluation account starting at $1,000. Proceed?")) {
                   const res = await enrollChallengeAccount();
                   if (res && res.success) {
@@ -372,23 +380,35 @@ const TradingPlatform = () => {
         </div>
 
         <div className="header-actions">
-          <button className="btn btn-outline" onClick={() => setShowDeposit(true)}>
-            <Wallet size={16} /> Deposit
-          </button>
-          {user?.role === 'admin' && (
-            <button className="btn btn-outline" onClick={() => navigate('/admin')}>
-              <Settings size={16} /> Admin
+          {!user ? (
+            <button 
+              className="btn" 
+              onClick={() => navigate('/login')}
+              style={{ background: 'var(--buy-color)', color: '#000', fontWeight: 'bold' }}
+            >
+              Login / Register
             </button>
+          ) : (
+            <>
+              <button className="btn btn-outline" onClick={() => setShowDeposit(true)}>
+                <Wallet size={16} /> Deposit
+              </button>
+              {user?.role === 'admin' && (
+                <button className="btn btn-outline" onClick={() => navigate('/admin')}>
+                  <Settings size={16} /> Admin
+                </button>
+              )}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.04)', border: '1px solid var(--panel-border)', padding: '6px 16px', borderRadius: '24px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: '1.2' }}>
+                  <span style={{ color: 'var(--text-primary)', fontSize: '13px', fontWeight: '600' }}>{user?.fullName || user?.username}</span>
+                  <span style={{ color: 'var(--accent)', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 'bold' }}>{user?.role}</span>
+                </div>
+                <button onClick={logout} className="btn" style={{ padding: '4px', background: 'none' }} title="Log Out">
+                  <LogOut size={15} color="var(--sell-color)" />
+                </button>
+              </div>
+            </>
           )}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.04)', border: '1px solid var(--panel-border)', padding: '6px 16px', borderRadius: '24px' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: '1.2' }}>
-              <span style={{ color: 'var(--text-primary)', fontSize: '13px', fontWeight: '600' }}>{user?.fullName || user?.username}</span>
-              <span style={{ color: 'var(--accent)', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 'bold' }}>{user?.role}</span>
-            </div>
-            <button onClick={logout} className="btn" style={{ padding: '4px', background: 'none' }} title="Log Out">
-              <LogOut size={15} color="var(--sell-color)" />
-            </button>
-          </div>
         </div>
       </header>
       <div className="main-grid">

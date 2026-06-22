@@ -31,11 +31,7 @@ const MainApp = () => {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={
-          <ProtectedRoute>
-            <TradingPlatform />
-          </ProtectedRoute>
-        } />
+        <Route path="/" element={<TradingPlatform />} />
         <Route path="/login" element={<Auth />} />
         <Route path="/unauthorized" element={<Unauthorized />} />
         <Route path="/profile" element={
