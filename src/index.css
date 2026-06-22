@@ -439,3 +439,481 @@ input {
   color: var(--accent);
   border-bottom-color: var(--accent);
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   RESPONSIVE DESIGN — All Device Compatibility
+   ═══════════════════════════════════════════════════════════════ */
+
+/* --- Viewport Meta Helpers --- */
+html {
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+/* --- Account Switcher Responsive --- */
+.account-switcher {
+  display: flex;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--panel-border);
+  border-radius: 30px;
+  padding: 2px;
+  position: relative;
+  width: 270px;
+  height: 36px;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.account-switcher-btn {
+  flex: 1;
+  background: none;
+  border: none;
+  font-size: 11px;
+  font-weight: 700;
+  z-index: 2;
+  border-radius: 28px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  font-family: var(--font-family);
+  transition: color 0.2s, text-shadow 0.2s;
+}
+
+/* --- Admin Table Responsive Wrapper --- */
+.admin-table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+}
+
+/* --- Pulse animation for notification dots --- */
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.2); }
+}
+
+/* --- Custom scrollbar for modals --- */
+.custom-scrollbar::-webkit-scrollbar { width: 4px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
+
+/* ═══ TABLET (≤1024px) ═══ */
+@media (max-width: 1024px) {
+  .app-container {
+    padding: 15px;
+  }
+
+  .header {
+    padding: 12px 0;
+    margin-bottom: 20px;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .logo {
+    font-size: 20px;
+  }
+
+  .main-grid {
+    grid-template-columns: 1fr 320px;
+    gap: 16px;
+  }
+
+  .glass-panel {
+    padding: 18px;
+    border-radius: 14px;
+  }
+
+  .current-price {
+    font-size: 40px;
+  }
+
+  .stat-value {
+    font-size: 20px;
+  }
+
+  .admin-table th, .admin-table td {
+    padding: 12px 10px;
+    font-size: 13px;
+  }
+
+  .tabs {
+    gap: 6px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap;
+  }
+
+  .tab {
+    white-space: nowrap;
+    font-size: 14px;
+    padding: 8px 12px;
+  }
+}
+
+/* ═══ MOBILE (≤768px) ═══ */
+@media (max-width: 768px) {
+  .app-container {
+    padding: 12px 10px;
+    padding-bottom: 80px;
+  }
+
+  .header {
+    padding: 10px 0;
+    margin-bottom: 16px;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .logo {
+    font-size: 18px;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .header-actions {
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .main-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .glass-panel {
+    padding: 16px;
+    border-radius: 12px;
+  }
+
+  .current-price {
+    font-size: 32px;
+  }
+
+  .price-display {
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .wallet-stats {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .stat-value {
+    font-size: 18px;
+  }
+
+  .stat-label {
+    font-size: 11px;
+  }
+
+  .stat-box {
+    padding: 12px;
+    border-radius: 10px;
+  }
+
+  .modal-content {
+    width: 94% !important;
+    max-width: 94% !important;
+    max-height: 85vh;
+    overflow-y: auto;
+  }
+
+  .modal-overlay {
+    padding: 16px;
+    align-items: flex-start;
+    padding-top: 10vh;
+  }
+
+  .modal-header h2 {
+    font-size: 18px;
+  }
+
+  .btn {
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+
+  .btn-buy, .btn-sell {
+    font-size: 14px;
+    padding: 12px;
+  }
+
+  .trade-buttons {
+    gap: 10px;
+  }
+
+  .order-panel {
+    gap: 14px;
+  }
+
+  .input-group label {
+    font-size: 13px;
+  }
+
+  .custom-input {
+    padding: 10px 14px;
+    font-size: 15px;
+  }
+
+  .time-status {
+    flex-wrap: wrap;
+    font-size: 12px;
+    padding: 10px 12px;
+    gap: 8px;
+  }
+
+  .admin-table {
+    font-size: 12px;
+  }
+
+  .admin-table th, .admin-table td {
+    padding: 10px 8px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 4px;
+    padding-bottom: 8px;
+  }
+
+  .tab {
+    font-size: 13px;
+    padding: 6px 12px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .rules-list li {
+    font-size: 13px;
+    margin-bottom: 10px;
+  }
+
+  .account-switcher {
+    width: 100%;
+    max-width: 300px;
+  }
+}
+
+/* ═══ SMALL MOBILE (≤480px) ═══ */
+@media (max-width: 480px) {
+  .app-container {
+    padding: 10px 8px;
+    padding-bottom: 80px;
+  }
+
+  .header {
+    padding: 8px 0;
+    margin-bottom: 12px;
+    gap: 8px;
+  }
+
+  .logo {
+    font-size: 16px;
+    gap: 6px;
+  }
+
+  .header-actions {
+    gap: 6px;
+  }
+
+  .header-actions .btn {
+    padding: 8px 10px;
+    font-size: 11px;
+  }
+
+  .glass-panel {
+    padding: 14px 12px;
+    border-radius: 10px;
+  }
+
+  .current-price {
+    font-size: 28px;
+  }
+
+  .wallet-stats {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .stat-value {
+    font-size: 16px;
+  }
+
+  .stat-box {
+    padding: 10px;
+  }
+
+  .modal-content {
+    width: 96% !important;
+    max-width: 96% !important;
+  }
+
+  .modal-overlay {
+    padding: 10px;
+    padding-top: 5vh;
+  }
+
+  .modal-header h2 {
+    font-size: 16px;
+  }
+
+  .btn {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  .btn-buy, .btn-sell {
+    font-size: 13px;
+    padding: 10px;
+  }
+
+  .custom-input {
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+
+  .admin-table th, .admin-table td {
+    padding: 8px 6px;
+    font-size: 11px;
+  }
+
+  .tab {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+
+  .account-switcher {
+    width: 100%;
+    max-width: 100%;
+    height: 34px;
+  }
+
+  .account-switcher-btn {
+    font-size: 10px;
+  }
+
+  .auth-box {
+    max-width: 100%;
+    padding: 0 4px;
+  }
+
+  .auth-container {
+    padding: 15px 10px;
+  }
+}
+
+/* ═══ VERY SMALL (≤360px) ═══ */
+@media (max-width: 360px) {
+  .app-container {
+    padding: 8px 6px;
+  }
+
+  .logo {
+    font-size: 14px;
+  }
+
+  .glass-panel {
+    padding: 12px 10px;
+    border-radius: 8px;
+  }
+
+  .current-price {
+    font-size: 24px;
+  }
+
+  .modal-header h2 {
+    font-size: 15px;
+  }
+
+  .btn {
+    padding: 7px 10px;
+    font-size: 11px;
+  }
+
+  .btn-buy, .btn-sell {
+    font-size: 12px;
+    padding: 9px;
+  }
+}
+
+/* ═══ SAFE AREA for iOS notch / bottom bar ═══ */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .mobile-nav-bar {
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));
+    height: calc(65px + env(safe-area-inset-bottom));
+  }
+}
+
+/* ═══ LANDSCAPE MOBILE ═══ */
+@media (max-height: 500px) and (orientation: landscape) {
+  .modal-overlay {
+    align-items: flex-start;
+    padding-top: 2vh;
+  }
+
+  .modal-content {
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+
+  .auth-container {
+    min-height: auto;
+    padding: 10px;
+  }
+}
+
+/* ═══ DESKTOP LARGE (≥1400px) ═══ */
+@media (min-width: 1400px) {
+  .app-container {
+    max-width: 1600px;
+  }
+
+  .main-grid {
+    grid-template-columns: 1fr 420px;
+  }
+}
+
+/* ═══ Touch device optimizations ═══ */
+@media (hover: none) and (pointer: coarse) {
+  .btn:hover {
+    transform: none;
+  }
+
+  .btn-primary:hover {
+    transform: none;
+  }
+
+  .btn-buy:hover, .btn-sell:hover {
+    transform: none;
+  }
+
+  /* Larger touch targets */
+  .tab {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+
+  .menu-row {
+    min-height: 52px;
+  }
+
+  .modal-close {
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}

@@ -63,7 +63,7 @@ const NewsScreen = () => {
         alignItems: 'center'
       }}
     >
-      <div style={{ maxWidth: '480px', width: '100%' }}>
+      <div style={{ maxWidth: '600px', width: '100%' }}>
         <div
           style={{
             display: 'flex',

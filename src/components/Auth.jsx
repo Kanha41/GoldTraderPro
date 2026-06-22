@@ -340,6 +340,7 @@ const Auth = () => {
           top: '20px',
           right: '20px',
           width: '380px',
+          maxWidth: 'calc(100vw - 40px)',
           backgroundColor: 'rgba(15, 23, 42, 0.95)',
           borderLeft: '4px solid var(--accent)',
           borderTop: '1px solid var(--panel-border)',

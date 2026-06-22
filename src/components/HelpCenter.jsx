@@ -62,7 +62,7 @@ const HelpCenter = ({ isSubView = false, onBack }) => {
       flexDirection: 'column',
       alignItems: 'center'
     }}>
-      <div style={{ maxWidth: '480px', width: '100%' }}>
+      <div style={{ maxWidth: '600px', width: '100%' }}>
         
         {/* --- Header Title --- */}
         {isSubView ? (

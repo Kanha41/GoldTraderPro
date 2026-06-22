@@ -17,7 +17,7 @@ const MobileNavBar = ({ activeTab }) => {
   };
 
   return (
-    <div style={{
+    <div className="mobile-nav-bar" style={{
       position: 'fixed',
       bottom: 0,
       left: 0,
@@ -25,11 +25,12 @@ const MobileNavBar = ({ activeTab }) => {
       height: '65px',
       background: 'rgba(15, 23, 42, 0.95)',
       backdropFilter: 'blur(10px)',
+      WebkitBackdropFilter: 'blur(10px)',
       borderTop: '1px solid var(--panel-border)',
       display: 'flex',
       justifyContent: 'space-around',
       alignItems: 'center',
-      paddingBottom: 'safe',
+      paddingBottom: 'env(safe-area-inset-bottom, 0px)',
       zIndex: 1000,
       boxShadow: '0 -4px 20px rgba(0,0,0,0.4)'
     }}>

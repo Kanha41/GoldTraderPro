@@ -131,6 +131,7 @@ const AdminPanel = () => {
     if (requests.length === 0) return <p style={{ color: 'var(--text-secondary)' }}>No requests found.</p>;
 
     return (
+      <div className="admin-table-wrapper">
       <table className="admin-table">
         <thead>
           <tr>
@@ -206,6 +207,7 @@ const AdminPanel = () => {
           ))}
         </tbody>
       </table>
+      </div>
     );
   };
 

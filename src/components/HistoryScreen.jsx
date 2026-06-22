@@ -101,6 +101,7 @@ const SettledTradeCard = ({ trade, accountType }) => {
         className="glass-panel"
         style={{
           padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          gap: '12px', flexWrap: 'wrap',
           borderLeft: isViolation 
             ? '4px solid #f59e0b' 
             : isWin 
@@ -189,7 +190,7 @@ const HistoryScreen = () => {
       flexDirection: 'column',
       alignItems: 'center'
     }}>
-      <div style={{ maxWidth: '480px', width: '100%' }}>
+      <div style={{ maxWidth: '600px', width: '100%' }}>
 
         {/* --- Header Section --- */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '24px', textAlign: 'center' }}>

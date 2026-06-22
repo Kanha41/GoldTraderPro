@@ -210,7 +210,7 @@ const ProfileDashboard = () => {
         flexDirection: 'column',
         alignItems: 'center'
       }}>
-        <div style={{ maxWidth: '480px', width: '100%' }}>
+        <div style={{ maxWidth: '600px', width: '100%' }}>
           
           {/* --- Header Section --- */}
           <div style={{
@@ -266,17 +266,10 @@ const ProfileDashboard = () => {
           </div>
 
           {/* Synced Premium Real/Demo Switcher */}
-          <div style={{
-            display: 'flex',
-            background: 'rgba(0, 0, 0, 0.4)',
-            border: '1px solid var(--panel-border)',
-            borderRadius: '30px',
-            padding: '2px',
-            position: 'relative',
+          <div className="account-switcher" style={{
             width: '100%',
             height: '42px',
-            marginBottom: '24px',
-            userSelect: 'none'
+            marginBottom: '24px'
           }}>
             {/* Animated Background Selector */}
             <div style={{
@@ -307,20 +300,10 @@ const ProfileDashboard = () => {
             
             <button 
               onClick={() => setAccountType('REAL')}
+              className="account-switcher-btn"
               style={{
-                flex: 1,
-                background: 'none',
-                border: 'none',
                 color: accountType === 'REAL' ? 'var(--buy-color)' : 'var(--text-secondary)',
                 fontSize: '13px',
-                fontWeight: '700',
-                zIndex: 2,
-                borderRadius: '28px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '4px',
                 textShadow: accountType === 'REAL' ? '0 0 8px rgba(16, 185, 129, 0.3)' : 'none'
               }}
             >
@@ -329,20 +312,10 @@ const ProfileDashboard = () => {
 
             <button 
               onClick={() => setAccountType('CHALLENGE')}
+              className="account-switcher-btn"
               style={{
-                flex: 1,
-                background: 'none',
-                border: 'none',
                 color: accountType === 'CHALLENGE' ? '#38bdf8' : 'var(--text-secondary)',
                 fontSize: '13px',
-                fontWeight: '700',
-                zIndex: 2,
-                borderRadius: '28px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '4px',
                 textShadow: accountType === 'CHALLENGE' ? '0 0 8px rgba(56, 189, 248, 0.3)' : 'none'
               }}
             >
@@ -351,20 +324,10 @@ const ProfileDashboard = () => {
             
             <button 
               onClick={() => setAccountType('DEMO')}
+              className="account-switcher-btn"
               style={{
-                flex: 1,
-                background: 'none',
-                border: 'none',
                 color: accountType === 'DEMO' ? 'var(--accent)' : 'var(--text-secondary)',
                 fontSize: '13px',
-                fontWeight: '700',
-                zIndex: 2,
-                borderRadius: '28px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '4px',
                 textShadow: accountType === 'DEMO' ? '0 0 8px rgba(234, 179, 8, 0.3)' : 'none'
               }}
             >
@@ -664,7 +627,7 @@ const ProfileDashboard = () => {
                   display: 'flex',
                   flexWrap: 'wrap',
                   gap: '20px',
-                  maxHeight: '400px',
+                  maxHeight: '60vh',
                   overflowY: 'auto',
                   paddingRight: '4px'
                 }} className="custom-scrollbar">

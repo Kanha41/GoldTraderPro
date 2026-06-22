@@ -122,17 +122,7 @@ const TradingPlatform = () => {
           <div className="logo">
             <span>&#x2B22;</span> GoldTrader Pro
           </div>
-          <div style={{
-            display: 'flex',
-            background: 'rgba(0, 0, 0, 0.4)',
-            border: '1px solid var(--panel-border)',
-            borderRadius: '30px',
-            padding: '2px',
-            position: 'relative',
-            width: '270px',
-            height: '36px',
-            userSelect: 'none'
-          }}>
+          <div className="account-switcher">
             <div style={{
               position: 'absolute',
               top: '2px',
@@ -145,9 +135,9 @@ const TradingPlatform = () => {
               boxShadow: '0 0 10px rgba(56, 189, 248, 0.2)',
               zIndex: 1
             }} />
-            <button onClick={() => setAccountType('REAL')} style={{ flex: 1, background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: '11px', fontWeight: '700', zIndex: 2, borderRadius: '28px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Real</button>
-            <button onClick={() => setAccountType('CHALLENGE')} style={{ flex: 1, background: 'none', border: 'none', color: '#38bdf8', fontSize: '11px', fontWeight: '700', zIndex: 2, borderRadius: '28px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Challenge</button>
-            <button onClick={() => setAccountType('DEMO')} style={{ flex: 1, background: 'none', border: 'none', color: 'var(--text-secondary)', fontSize: '11px', fontWeight: '700', zIndex: 2, borderRadius: '28px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Demo</button>
+            <button className="account-switcher-btn" onClick={() => setAccountType('REAL')} style={{ color: 'var(--text-secondary)', textShadow: 'none' }}>Real</button>
+            <button className="account-switcher-btn" onClick={() => setAccountType('CHALLENGE')} style={{ color: '#38bdf8', textShadow: '0 0 8px rgba(56, 189, 248, 0.3)' }}>Challenge</button>
+            <button className="account-switcher-btn" onClick={() => setAccountType('DEMO')} style={{ color: 'var(--text-secondary)', textShadow: 'none' }}>Demo</button>
           </div>
         </header>
 
@@ -182,7 +172,7 @@ const TradingPlatform = () => {
               Prove your trading consistency across 3 distinct evaluation stages. Pass all stages to receive a funded account with real profit payouts!
             </p>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '35px', textAlign: 'left' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '35px', textAlign: 'left' }}>
               <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--panel-border)', borderRadius: '16px', padding: '14px' }}>
                 <span style={{ fontSize: '10px', color: '#38bdf8', fontWeight: 'bold', display: 'block', textTransform: 'uppercase', marginBottom: '6px' }}>Stage 1</span>
                 <strong style={{ fontSize: '14px', color: '#fff', display: 'block', marginBottom: '4px' }}>Profit Target</strong>
@@ -273,17 +263,7 @@ const TradingPlatform = () => {
         )}
 
         {/* Synced Premium Real/Demo Switcher */}
-        <div style={{
-          display: 'flex',
-          background: 'rgba(0, 0, 0, 0.4)',
-          border: '1px solid var(--panel-border)',
-          borderRadius: '30px',
-          padding: '2px',
-          position: 'relative',
-          width: '270px',
-          height: '36px',
-          userSelect: 'none'
-        }}>
+        <div className="account-switcher">
           {/* Animated Background Selector */}
           <div style={{
             position: 'absolute',
@@ -312,21 +292,10 @@ const TradingPlatform = () => {
           }} />
           
           <button 
+            className="account-switcher-btn"
             onClick={() => setAccountType('REAL')}
             style={{
-              flex: 1,
-              background: 'none',
-              border: 'none',
               color: accountType === 'REAL' ? 'var(--buy-color)' : 'var(--text-secondary)',
-              fontSize: '11px',
-              fontWeight: '700',
-              zIndex: 2,
-              borderRadius: '28px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '2px',
               textShadow: accountType === 'REAL' ? '0 0 8px rgba(16, 185, 129, 0.3)' : 'none'
             }}
           >
@@ -334,21 +303,10 @@ const TradingPlatform = () => {
           </button>
 
           <button 
+            className="account-switcher-btn"
             onClick={() => setAccountType('CHALLENGE')}
             style={{
-              flex: 1,
-              background: 'none',
-              border: 'none',
               color: accountType === 'CHALLENGE' ? '#38bdf8' : 'var(--text-secondary)',
-              fontSize: '11px',
-              fontWeight: '700',
-              zIndex: 2,
-              borderRadius: '28px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '2px',
               textShadow: accountType === 'CHALLENGE' ? '0 0 8px rgba(56, 189, 248, 0.3)' : 'none'
             }}
           >
@@ -356,22 +314,11 @@ const TradingPlatform = () => {
           </button>
           
           <button 
+            className="account-switcher-btn"
             onClick={() => setAccountType('DEMO')}
             title="Demo money cannot be withdrawn"
             style={{
-              flex: 1,
-              background: 'none',
-              border: 'none',
               color: accountType === 'DEMO' ? 'var(--accent)' : 'var(--text-secondary)',
-              fontSize: '11px',
-              fontWeight: '700',
-              zIndex: 2,
-              borderRadius: '28px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '2px',
               textShadow: accountType === 'DEMO' ? '0 0 8px rgba(234, 179, 8, 0.3)' : 'none'
             }}
           >
@@ -398,7 +345,7 @@ const TradingPlatform = () => {
                   <Settings size={16} /> Admin
                 </button>
               )}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.04)', border: '1px solid var(--panel-border)', padding: '6px 16px', borderRadius: '24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.04)', border: '1px solid var(--panel-border)', padding: '6px 16px', borderRadius: '24px', flexWrap: 'wrap' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: '1.2' }}>
                   <span style={{ color: 'var(--text-primary)', fontSize: '13px', fontWeight: '600' }}>{user?.fullName || user?.username}</span>
                   <span style={{ color: 'var(--accent)', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 'bold' }}>{user?.role}</span>
@@ -432,7 +379,7 @@ const TradingPlatform = () => {
         {/* Right Side: Order Panel */}
         <div className="order-panel">
           {accountType === 'CHALLENGE' && activeChallengeAccount ? (
-            <div className="wallet-stats" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
+            <div className="wallet-stats" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))' }}>
               <div className="stat-box">
                 <div className="stat-label">Challenge Stage</div>
                 <div className="stat-value" style={{ color: '#38bdf8', fontSize: '18px' }}>
