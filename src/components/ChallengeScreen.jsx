@@ -106,7 +106,7 @@ const ChallengeScreen = () => {
             Trading Challenges
           </h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '13px', margin: 0 }}>
-            Day-based goals and trade-count milestones — win rewards on your schedule.
+            Enroll in our 3-Stage Funded Challenge to win cash prizes and funded status.
           </p>
         </div>
 
@@ -271,7 +271,9 @@ const ChallengeScreen = () => {
             </div>
           </div>
 
-          {/* 60 Trade Challenge — independent */}
+          {false && (
+            <>
+              {/* 60 Trade Challenge — independent */}
           <div
             className="glass-panel"
             style={{
@@ -825,6 +827,7 @@ const ChallengeScreen = () => {
               60-Trade counts only successful (TP) trades toward 60. Day challenges count winning trades per calendar day. You can only be enrolled in one challenge at a time.
             </div>
           </div>
+          </>)}
         </div>
       </div>
 
