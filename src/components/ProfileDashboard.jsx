@@ -934,7 +934,7 @@ const ProfileDashboard = () => {
       {/* About Popup */}
       {showAboutModal && (
         <div className="modal-overlay">
-          <div className="glass-panel modal-content" style={{ maxWidth: '420px', textAlign: 'left' }}>
+          <div className="glass-panel modal-content" style={{ maxWidth: '420px', textAlign: 'left', maxHeight: '85vh', overflowY: 'auto' }}>
             <div className="modal-header">
               <h2>About Platform</h2>
               <button onClick={() => setShowAboutModal(false)} className="modal-close"><X size={22} /></button>
@@ -943,6 +943,28 @@ const ProfileDashboard = () => {
               <p><strong>GoldTrader Pro v1.2.0</strong></p>
               <p>GoldTrader Pro is a high-fidelity binary options and forex-inspired demo trading application powered by real-time Pax Gold (PAXG/USDT) prices via Binance WebSocket integrations.</p>
               <p>© 2026 GoldTrader Pro Inc. Developed with dynamic Challenge Tracking and Role-Based Access Controls for premium financial simulations.</p>
+              
+              {/* Challenge Explainer Video & Audio */}
+              <div style={{ marginTop: '15px', paddingTop: '15px', borderTop: '1px solid var(--border-color)' }}>
+                <p style={{ color: 'var(--text-primary)', fontWeight: '600', marginBottom: '8px', fontSize: '14px' }}>Challenge Stages Guide</p>
+                <p style={{ marginBottom: '12px' }}>Watch this detailed explanation of how to successfully complete Stage 1 and Stage 2 of the Trading Challenge.</p>
+                
+                <video 
+                  controls 
+                  preload="metadata"
+                  style={{ width: '100%', borderRadius: '8px', backgroundColor: '#000', marginBottom: '15px', border: '1px solid var(--border-color)' }}
+                  poster="/placeholder-poster.jpg"
+                >
+                  <source src="/challenge-guide.mp4" type="video/mp4" />
+                  Your browser does not support the video tag.
+                </video>
+
+                <p style={{ color: 'var(--text-primary)', fontWeight: '600', marginBottom: '8px', fontSize: '14px' }}>Audio Walkthrough</p>
+                <audio controls style={{ width: '100%', height: '40px', outline: 'none' }}>
+                  <source src="/challenge-audio.mp3" type="audio/mpeg" />
+                  Your browser does not support the audio element.
+                </audio>
+              </div>
             </div>
           </div>
         </div>
