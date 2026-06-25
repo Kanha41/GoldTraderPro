@@ -280,8 +280,12 @@ const ProfileDashboard = () => {
               position: 'absolute',
               top: '2px',
               bottom: '2px',
-              left: accountType === 'REAL' ? '2px' : accountType === 'CHALLENGE' ? 'calc(100% / 3)' : 'calc(2 * (100% / 3))',
-              width: 'calc(100% / 3 - 4px)',
+              left: accountType === 'REAL' 
+                ? '2px' 
+                : accountType === 'CHALLENGE' 
+                  ? 'calc((100% - 4px) / 3 + 2px)' 
+                  : 'calc((100% - 4px) * 2 / 3 + 2px)',
+              width: 'calc((100% - 4px) / 3)',
               background: accountType === 'REAL' 
                 ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(16, 185, 129, 0.1))'
                 : accountType === 'CHALLENGE'

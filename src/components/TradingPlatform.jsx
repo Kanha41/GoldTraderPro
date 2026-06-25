@@ -154,8 +154,8 @@ const TradingPlatform = () => {
               position: 'absolute',
               top: '2px',
               bottom: '2px',
-              left: '90px',
-              width: '88px',
+              left: 'calc((100% - 4px) / 3 + 2px)',
+              width: 'calc((100% - 4px) / 3)',
               background: 'linear-gradient(135deg, rgba(56, 189, 248, 0.25), rgba(14, 165, 233, 0.15))',
               border: '1px solid rgba(56, 189, 248, 0.4)',
               borderRadius: '28px',
@@ -291,8 +291,12 @@ const TradingPlatform = () => {
             position: 'absolute',
             top: '2px',
             bottom: '2px',
-            left: accountType === 'REAL' ? '2px' : accountType === 'CHALLENGE' ? '90px' : '178px',
-            width: '88px',
+            left: accountType === 'REAL' 
+              ? '2px' 
+              : accountType === 'CHALLENGE' 
+                ? 'calc((100% - 4px) / 3 + 2px)' 
+                : 'calc((100% - 4px) * 2 / 3 + 2px)',
+            width: 'calc((100% - 4px) / 3)',
             background: accountType === 'REAL' 
               ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(16, 185, 129, 0.1))'
               : accountType === 'CHALLENGE'
