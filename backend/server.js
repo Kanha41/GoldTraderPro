@@ -1170,7 +1170,7 @@ app.post('/api/challenge-account/enroll', authenticateToken, async (req, res) =>
       { where: { userId: userObj.id, challengeStatus: 'ACTIVE' }, transaction: t }
     );
 
-    const isAdmin = userObj.role === 'ADMIN';
+    const isAdmin = userObj.role === 'admin';
     const startingStage = isAdmin ? 3 : 1;
 
     // Create new challenge account
@@ -1213,14 +1213,41 @@ app.post('/api/challenge-account/trade/add', authenticateToken, async (req, res)
   const t = await sequelize.transaction();
 
   try {
+    const userObj = await getUserWithAssociations(req.user.id);
+    if (!userObj) {
+      await t.rollback();
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
     const challengeAccount = await ChallengeAccount.findOne({
-      where: { userId: req.user.id, challengeStatus: 'ACTIVE' },
+      where: { userId: userObj.id, challengeStatus: 'ACTIVE' },
+      include: [{ model: ChallengeProgress, as: 'progress' }],
       transaction: t
     });
 
     if (!challengeAccount) {
       await t.rollback();
       return res.status(400).json({ success: false, message: 'No active challenge account found. Please enroll first.' });
+    }
+
+    // Admin auto-pass: if admin is somehow in Stage 1, instantly advance to Stage 3
+    if (challengeAccount.currentStage === 1 && userObj.role === 'admin') {
+      challengeAccount.currentStage = 3;
+      challengeAccount.balance = 1000.00;
+      challengeAccount.equity = 1000.00;
+      challengeAccount.highestBalance = 1000.00;
+      const progress = challengeAccount.progress;
+      progress.stage = 3;
+      progress.wins = 0;
+      progress.losses = 0;
+      progress.tradeCount = 0;
+      progress.currentStreak = 0;
+      progress.tripletAttempts = 0;
+      await progress.save({ transaction: t });
+      await challengeAccount.save({ transaction: t });
+      await t.commit();
+      const updatedUser = await getUserWithAssociations(userObj.id);
+      return res.json({ success: false, message: 'Stage 1 auto-passed for admin. You are now in Stage 3. Please place your trade again.', user: formatUserResponse(updatedUser) });
     }
 
     if (challengeAccount.currentStage === 3) {
@@ -1244,6 +1271,18 @@ app.post('/api/challenge-account/trade/add', authenticateToken, async (req, res)
     if (slDistance > 3) {
       await t.rollback();
       return res.status(400).json({ success: false, message: 'Stop Loss must be at most 3 pips.' });
+    }
+
+    // Stage 1: Deduct $1 trade-open cost from challenge balance
+    if (challengeAccount.currentStage === 1) {
+      const currentBalance = parseFloat(challengeAccount.balance);
+      if (currentBalance < 1) {
+        await t.rollback();
+        return res.status(400).json({ success: false, message: 'Insufficient balance to open a trade (requires $1 open cost).' });
+      }
+      challengeAccount.balance = currentBalance - 1;
+      challengeAccount.equity = parseFloat(challengeAccount.equity) - 1;
+      await challengeAccount.save({ transaction: t });
     }
 
     const priceNum = parseFloat(currentPrice);
@@ -1387,7 +1426,7 @@ app.post('/api/challenge-account/trade/complete', authenticateToken, async (req,
           progress.tradeCount = 0;
 
           if (progress.tripletAttempts >= 2) {
-            const isAdmin = userObj.role === 'ADMIN';
+            const isAdmin = userObj.role === 'admin';
             const resetStage = isAdmin ? 3 : 1;
 
             // Both attempts exhausted – reset back
