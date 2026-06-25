@@ -206,6 +206,7 @@ const ChallengeScreen = () => {
                   )}
                   {activeChallengeAccount.currentStage === 3 && activeChallengeAccount.progress && (
                     <div style={{ fontSize: '12px', marginTop: '4px' }}>
+                      <span style={{ color: '#ef4444', fontSize: '11px', fontWeight: '600', display: 'block', marginBottom: '3px' }}>⚠ A loss resets the streak</span>
                       <span style={{ color: 'var(--text-secondary)' }}>Triplet Trade:</span> <strong style={{ color: '#f59e0b' }}>{activeChallengeAccount.progress.currentStreak} of 3 wins</strong> in a row<br/>
                       <span style={{ color: 'var(--text-secondary)' }}>Attempt:</span> <strong>{(activeChallengeAccount.progress.tripletAttempts || 0) + 1} / 2</strong>
                     </div>

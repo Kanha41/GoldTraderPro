@@ -471,6 +471,7 @@ const TradingPlatform = () => {
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '6px' }}>
                     <span style={{ color: 'var(--text-secondary)' }}>Target: 3 Consecutive Wins</span>
+                    <span style={{ color: '#ef4444', fontSize: '10px', fontWeight: '600' }}>⚠ A loss resets the streak</span>
                     <span style={{ color: '#f59e0b', fontWeight: 'bold' }}>Streak: {activeChallengeAccount.progress.currentStreak} / 3</span>
                   </div>
                   <div style={{ display: 'flex', gap: '8px', margin: '8px 0' }}>

@@ -397,6 +397,7 @@ const ProfileDashboard = () => {
               {activeChallengeAccount.currentStage === 3 && activeChallengeAccount.progress && (
                 <div style={{ marginTop: '12px', padding: '10px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid var(--panel-border)' }}>
                   <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>Stage 3 Streak</span>
+                  <span style={{ fontSize: '11px', color: '#ef4444', fontWeight: '600', display: 'block', marginBottom: '4px' }}>⚠ A loss resets the streak</span>
                   <strong style={{ fontSize: '13px', color: '#f59e0b' }}>
                     {activeChallengeAccount.progress.currentStreak} of 3 Consecutive Wins
                   </strong>
