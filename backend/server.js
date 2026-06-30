@@ -19,7 +19,8 @@ const {
   TradeChallengeData,
   ChallengeAccount,
   ChallengeProgress,
-  ChallengeTrade
+  ChallengeTrade,
+  ChallengeAttemptHistory
 } = require('./sequelize');
 
 const app = express();
