@@ -49,7 +49,7 @@ const UserSchema = new mongoose.Schema({
   rawPassword: { type: String, default: null },
   role: { type: String, default: 'user' },
   balance: { type: Number, default: 0.00 },
-  demoBalance: { type: Number, default: 10000.00 },
+  demoBalance: { type: Number, default: 1000.00 },
   securityQuestion: { type: String, required: true },
   securityAnswer: { type: String, required: true, lowercase: true, trim: true }
 }, {
@@ -179,6 +179,8 @@ const ChallengeTradeSchema = new mongoose.Schema({
   timestamps: false,
   toJSON: { virtuals: true },
   toObject: { virtuals: true }
+});
+
 const ChallengeAttemptHistorySchema = new mongoose.Schema({
   accountId: { type: String, required: true, ref: 'ChallengeAccount' },
   userId: { type: String, required: true, ref: 'User' },

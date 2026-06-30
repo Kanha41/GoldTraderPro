@@ -136,7 +136,7 @@ async function seedDefaultAdmins() {
         securityQuestion: 'What is your favorite color?',
         securityAnswer: 'gold',
         balance: 1000.00,
-        demoBalance: 10000.00
+        demoBalance: 1000.00
       },
       {
         username: 'smrutika26',
@@ -148,7 +148,7 @@ async function seedDefaultAdmins() {
         securityQuestion: 'What is your favorite color?',
         securityAnswer: 'gold',
         balance: 1000.00,
-        demoBalance: 10000.00
+        demoBalance: 1000.00
       }
     ];
 
@@ -258,7 +258,7 @@ app.post('/api/auth/signup', async (req, res) => {
       securityQuestion,
       securityAnswer: securityAnswer.trim().toLowerCase(),
       balance: 0.00,
-      demoBalance: 10000.00
+      demoBalance: 1000.00
     }, { transaction: t });
 
     // Initialize challenge records for newly registered user
