@@ -1192,7 +1192,8 @@ app.post('/api/challenge-account/enroll', authenticateToken, async (req, res) =>
       tradeCount: 0,
       currentStreak: 0,
       tripletAttempts: 0,
-      targetReached: false
+      targetReached: false,
+      targetWins: null
     }, { transaction: t });
 
     await t.commit();
@@ -1203,6 +1204,45 @@ app.post('/api/challenge-account/enroll', authenticateToken, async (req, res) =>
     await t.rollback();
     console.error('Enroll 3-Stage Challenge error:', err);
     res.status(500).json({ success: false, message: 'Failed to enroll in challenge.' });
+  }
+});
+
+// Select target for Stage 3
+app.post('/api/challenge-account/select-target', authenticateToken, async (req, res) => {
+  const { targetWins } = req.body;
+  if (![2, 3].includes(targetWins)) {
+    return res.status(400).json({ success: false, message: 'Invalid target selection.' });
+  }
+
+  const t = await sequelize.transaction();
+  try {
+    const userObj = await getUserWithAssociations(req.user.id);
+    if (!userObj) {
+      await t.rollback();
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    const challengeAccount = await ChallengeAccount.findOne({
+      where: { userId: userObj.id, challengeStatus: 'ACTIVE' },
+      include: [{ model: ChallengeProgress, as: 'progress' }],
+      transaction: t
+    });
+
+    if (!challengeAccount || challengeAccount.currentStage !== 3) {
+      await t.rollback();
+      return res.status(400).json({ success: false, message: 'Target selection is only available in Stage 3.' });
+    }
+
+    challengeAccount.progress.targetWins = targetWins;
+    await challengeAccount.progress.save({ transaction: t });
+    await t.commit();
+
+    const updatedUser = await getUserWithAssociations(userObj.id);
+    res.json({ success: true, message: 'Target selected successfully.', user: formatUserResponse(updatedUser) });
+  } catch (err) {
+    await t.rollback();
+    console.error('Select target error:', err);
+    res.status(500).json({ success: false, message: 'Failed to select target.' });
   }
 });
 
@@ -1243,6 +1283,7 @@ app.post('/api/challenge-account/trade/add', authenticateToken, async (req, res)
       progress.tradeCount = 0;
       progress.currentStreak = 0;
       progress.tripletAttempts = 0;
+      progress.targetWins = null;
       await progress.save({ transaction: t });
       await challengeAccount.save({ transaction: t });
       await t.commit();
@@ -1250,15 +1291,20 @@ app.post('/api/challenge-account/trade/add', authenticateToken, async (req, res)
       return res.json({ success: false, message: 'Stage 1 auto-passed for admin. You are now in Stage 3. Please place your trade again.', user: formatUserResponse(updatedUser) });
     }
 
-    if (challengeAccount.currentStage === 3) {
-      const openTrade = await ChallengeTrade.findOne({
-        where: { accountId: challengeAccount.id, result: 'PENDING' },
-        transaction: t
-      });
-      if (openTrade) {
-        await t.rollback();
-        return res.status(400).json({ success: false, message: 'You must wait for your current Triplet trade to close before placing another.' });
-      }
+    // Only one PENDING trade allowed at a time across all stages
+    const openTrade = await ChallengeTrade.findOne({
+      where: { accountId: challengeAccount.id, result: 'PENDING' },
+      transaction: t
+    });
+    if (openTrade) {
+      await t.rollback();
+      return res.status(400).json({ success: false, message: 'You must wait for your current trade to close before placing another.' });
+    }
+
+    // Require target selection for Stage 3
+    if (challengeAccount.currentStage === 3 && !challengeAccount.progress.targetWins) {
+      await t.rollback();
+      return res.status(400).json({ success: false, message: 'Please select a challenge target (Twice or Triplet) before trading.' });
     }
 
     const tpDistance = parseFloat(tpPips);
@@ -1271,18 +1317,6 @@ app.post('/api/challenge-account/trade/add', authenticateToken, async (req, res)
     if (slDistance > 3) {
       await t.rollback();
       return res.status(400).json({ success: false, message: 'Stop Loss must be at most 3 pips.' });
-    }
-
-    // Stage 1: Deduct $1 trade-open cost from challenge balance
-    if (challengeAccount.currentStage === 1) {
-      const currentBalance = parseFloat(challengeAccount.balance);
-      if (currentBalance < 1) {
-        await t.rollback();
-        return res.status(400).json({ success: false, message: 'Insufficient balance to open a trade (requires $1 open cost).' });
-      }
-      challengeAccount.balance = currentBalance - 1;
-      challengeAccount.equity = parseFloat(challengeAccount.equity) - 1;
-      await challengeAccount.save({ transaction: t });
     }
 
     const priceNum = parseFloat(currentPrice);
@@ -1375,35 +1409,97 @@ app.post('/api/challenge-account/trade/complete', authenticateToken, async (req,
     // Process Stage Progression if the account is still ACTIVE
     if (challengeAccount.challengeStatus === 'ACTIVE') {
       const progress = challengeAccount.progress;
+      progress.tradeCount += 1;
       
       if (challengeAccount.currentStage === 1) {
-        // Stage 1 – Profit Target: Balance >= $1,300
-        if (newBalance >= 1300.00) {
-          // Skip Stage 2 entirely, go directly to Stage 3 (Triplet)
-          challengeAccount.currentStage = 3;
-          challengeAccount.balance = 1000.00;
-          challengeAccount.equity = 1000.00;
-          challengeAccount.highestBalance = 1000.00;
-
-          progress.stage = 3;
-          progress.wins = 0;
-          progress.losses = 0;
-          progress.tradeCount = 0;
-          progress.currentStreak = 0;
-          progress.tripletAttempts = 0;
-          await progress.save({ transaction: t });
-        }
-      } else if (challengeAccount.currentStage === 3) {
-        // Stage 3 – Triplet Trade: Win 3 consecutive trades.
-        // User gets 2 attempts (each attempt = a set of 3 trades).
-        // A single loss within the triplet = failed attempt.
-        progress.tradeCount += 1;
-
+        // Stage 1 – Demo Triplet Trade (3 consecutive wins)
         if (isWin) {
           progress.currentStreak += 1;
           await progress.save({ transaction: t });
 
           if (progress.currentStreak >= 3) {
+            challengeAccount.currentStage = 2;
+            challengeAccount.balance = 1000.00;
+            challengeAccount.equity = 1000.00;
+            challengeAccount.highestBalance = 1000.00;
+
+            progress.stage = 2;
+            progress.wins = 0;
+            progress.losses = 0;
+            progress.tradeCount = 0;
+            progress.currentStreak = 0;
+            progress.tripletAttempts = 0;
+            progress.targetWins = null;
+            await progress.save({ transaction: t });
+          }
+        } else {
+          progress.tripletAttempts += 1;
+          progress.currentStreak = 0;
+          progress.tradeCount = 0;
+
+          if (progress.tripletAttempts >= 2) {
+            challengeAccount.balance = 1000.00;
+            challengeAccount.equity = 1000.00;
+            challengeAccount.highestBalance = 1000.00;
+
+            progress.wins = 0;
+            progress.losses = 0;
+            progress.tradeCount = 0;
+            progress.currentStreak = 0;
+            progress.tripletAttempts = 0;
+          }
+          await progress.save({ transaction: t });
+        }
+      } else if (challengeAccount.currentStage === 2) {
+        // Stage 2 – Demo Twice Trade (2 consecutive wins)
+        if (isWin) {
+          progress.currentStreak += 1;
+          await progress.save({ transaction: t });
+
+          if (progress.currentStreak >= 2) {
+            challengeAccount.currentStage = 3;
+            challengeAccount.balance = 1000.00;
+            challengeAccount.equity = 1000.00;
+            challengeAccount.highestBalance = 1000.00;
+
+            progress.stage = 3;
+            progress.wins = 0;
+            progress.losses = 0;
+            progress.tradeCount = 0;
+            progress.currentStreak = 0;
+            progress.tripletAttempts = 0;
+            progress.targetWins = null;
+            await progress.save({ transaction: t });
+          }
+        } else {
+          progress.tripletAttempts += 1;
+          progress.currentStreak = 0;
+          progress.tradeCount = 0;
+
+          if (progress.tripletAttempts >= 2) {
+            challengeAccount.currentStage = 1;
+            challengeAccount.balance = 1000.00;
+            challengeAccount.equity = 1000.00;
+            challengeAccount.highestBalance = 1000.00;
+
+            progress.stage = 1;
+            progress.wins = 0;
+            progress.losses = 0;
+            progress.tradeCount = 0;
+            progress.currentStreak = 0;
+            progress.tripletAttempts = 0;
+          }
+          await progress.save({ transaction: t });
+        }
+      } else if (challengeAccount.currentStage === 3) {
+        // Stage 3 – Real Choice Trade
+        const targetWins = progress.targetWins || 3;
+
+        if (isWin) {
+          progress.currentStreak += 1;
+          await progress.save({ transaction: t });
+
+          if (progress.currentStreak >= targetWins) {
             // PASSED the challenge!
             challengeAccount.challengeStatus = 'PASSED';
 
@@ -1429,7 +1525,6 @@ app.post('/api/challenge-account/trade/complete', authenticateToken, async (req,
             const isAdmin = userObj.role === 'admin';
             const resetStage = isAdmin ? 3 : 1;
 
-            // Both attempts exhausted – reset back
             challengeAccount.currentStage = resetStage;
             challengeAccount.balance = 1000.00;
             challengeAccount.equity = 1000.00;
@@ -1441,6 +1536,9 @@ app.post('/api/challenge-account/trade/complete', authenticateToken, async (req,
             progress.tradeCount = 0;
             progress.currentStreak = 0;
             progress.tripletAttempts = 0;
+            if (resetStage === 3) {
+              progress.targetWins = null;
+            }
           }
           await progress.save({ transaction: t });
         }
@@ -1456,8 +1554,10 @@ app.post('/api/challenge-account/trade/complete', authenticateToken, async (req,
       message: challengeAccount.challengeStatus === 'FAILED'
         ? 'Trade closed. Challenge Failed.'
         : challengeAccount.challengeStatus === 'PASSED'
-          ? 'Congratulations! You completed the 3-Stage Challenge! Reward is pending approval.'
-          : 'Trade completed successfully.',
+          ? 'Congratulations! You completed Stage 3! Reward is pending approval.'
+          : challengeAccount.currentStage !== trade.stage
+            ? `Trade completed. Advanced to Stage ${challengeAccount.currentStage}!`
+            : 'Trade completed successfully.',
       user: formatUserResponse(updatedUser)
     });
   } catch (err) {

@@ -155,7 +155,8 @@ const ChallengeProgressSchema = new mongoose.Schema({
   tradeCount: { type: Number, default: 0 },
   currentStreak: { type: Number, default: 0 },
   tripletAttempts: { type: Number, default: 0 },
-  targetReached: { type: Boolean, default: false }
+  targetReached: { type: Boolean, default: false },
+  targetWins: { type: Number, default: null }
 }, {
   timestamps: false,
   toJSON: { virtuals: true },

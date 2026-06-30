@@ -144,7 +144,7 @@ const ChallengeScreen = () => {
               {activeChallengeAccount
                 ? activeChallengeAccount.challengeStatus === 'PASSED'
                   ? 'PASSED'
-                  : `STAGE ${activeChallengeAccount.currentStage} ACTIVE`
+                  : `STAGE ${activeChallengeAccount.currentStage} ${activeChallengeAccount.currentStage < 3 ? 'DEMO' : 'REAL'}`
                 : 'NOT ENROLLED'}
             </div>
 
@@ -174,7 +174,7 @@ const ChallengeScreen = () => {
               Target Reward: ₹800 Cash Prize + Funded Status
             </span>
             <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '16px', lineHeight: '1.45' }}>
-              Grow balance from $1,000 to $1,300, then win a Triplet Trade (3 consecutive wins). You get 2 attempts. 1 Pip = $1 USD.
+              Complete 3 stages (Demo Triplet → Demo Twice Trade → Real Choice) to win a cash prize and funded status.
             </p>
 
             {activeChallengeAccount ? (
@@ -189,26 +189,24 @@ const ChallengeScreen = () => {
                     <strong style={{ color: 'var(--buy-color)' }}>Stage {activeChallengeAccount.currentStage}</strong>
                   </div>
 
-                  {activeChallengeAccount.currentStage === 1 && (
-                    <div style={{ marginTop: '4px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '4px' }}>
-                        <span style={{ color: 'var(--text-secondary)' }}>Target ($1,300):</span>
-                        <span>{Math.max(0, Math.min(100, (((parseFloat(activeChallengeAccount.balance) - 1000) / 300) * 100))).toFixed(0)}%</span>
-                      </div>
-                      <div style={{ height: '4px', background: 'rgba(255,255,255,0.05)', borderRadius: '2px', overflow: 'hidden' }}>
-                        <div style={{
-                          width: `${Math.max(0, Math.min(100, (((parseFloat(activeChallengeAccount.balance) - 1000) / 300) * 100)))}%`,
-                          height: '100%',
-                          background: 'var(--buy-color)'
-                        }} />
-                      </div>
+                  {activeChallengeAccount.currentStage < 3 && activeChallengeAccount.progress && (
+                    <div style={{ fontSize: '12px', marginTop: '4px' }}>
+                      <span style={{ color: '#ef4444', fontSize: '11px', fontWeight: '600', display: 'block', marginBottom: '3px' }}>⚠ A loss resets the streak</span>
+                      <span style={{ color: 'var(--text-secondary)' }}>Target:</span> <strong style={{ color: '#38bdf8' }}>{activeChallengeAccount.progress.currentStreak} of {activeChallengeAccount.currentStage === 1 ? 3 : 2} wins</strong> in a row<br/>
+                      <span style={{ color: 'var(--text-secondary)' }}>Attempt:</span> <strong>{(activeChallengeAccount.progress.tripletAttempts || 0) + 1} / 2</strong>
                     </div>
                   )}
                   {activeChallengeAccount.currentStage === 3 && activeChallengeAccount.progress && (
                     <div style={{ fontSize: '12px', marginTop: '4px' }}>
-                      <span style={{ color: '#ef4444', fontSize: '11px', fontWeight: '600', display: 'block', marginBottom: '3px' }}>⚠ A loss resets the streak</span>
-                      <span style={{ color: 'var(--text-secondary)' }}>Triplet Trade:</span> <strong style={{ color: '#f59e0b' }}>{activeChallengeAccount.progress.currentStreak} of 3 wins</strong> in a row<br/>
-                      <span style={{ color: 'var(--text-secondary)' }}>Attempt:</span> <strong>{(activeChallengeAccount.progress.tripletAttempts || 0) + 1} / 2</strong>
+                      {!activeChallengeAccount.progress.targetWins ? (
+                        <strong style={{ color: '#f59e0b', fontSize: '11px' }}>Action Required: Select Target in Trade View</strong>
+                      ) : (
+                        <>
+                          <span style={{ color: '#ef4444', fontSize: '11px', fontWeight: '600', display: 'block', marginBottom: '3px' }}>⚠ A loss resets the streak</span>
+                          <span style={{ color: 'var(--text-secondary)' }}>Target:</span> <strong style={{ color: '#f59e0b' }}>{activeChallengeAccount.progress.currentStreak} of {activeChallengeAccount.progress.targetWins} wins</strong> in a row<br/>
+                          <span style={{ color: 'var(--text-secondary)' }}>Attempt:</span> <strong>{(activeChallengeAccount.progress.tripletAttempts || 0) + 1} / 2</strong>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>

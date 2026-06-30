@@ -645,6 +645,25 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  const selectChallengeTarget = async (targetWins) => {
+    try {
+      const res = await fetch(`${API_URL}/api/challenge-account/select-target`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ targetWins })
+      });
+      const data = await res.json();
+      if (data.success) {
+        await loadUserData();
+        return { success: true, message: data.message };
+      }
+      return { success: false, message: data.message };
+    } catch (err) {
+      console.error('Failed to select challenge target:', err);
+      return { success: false, message: 'Server connection failed.' };
+    }
+  };
+
   const addChallengeTrade = async (tradeDetails) => {
     try {
       const res = await fetch(`${API_URL}/api/challenge-account/trade/add`, {
@@ -747,6 +766,7 @@ export const AppProvider = ({ children }) => {
     passedChallengeAccounts,
     failedChallengeAccounts,
     enrollChallengeAccount,
+    selectChallengeTarget,
     addChallengeTrade,
     completeChallengeTrade
   };

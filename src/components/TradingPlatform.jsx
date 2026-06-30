@@ -21,6 +21,7 @@ const TradingPlatform = () => {
     priceChange,
     activeChallengeAccount,
     enrollChallengeAccount,
+    selectChallengeTarget,
     addChallengeTrade
   } = useAppContext();
   const navigate = useNavigate();
@@ -201,14 +202,19 @@ const TradingPlatform = () => {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '35px', textAlign: 'left' }}>
               <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--panel-border)', borderRadius: '16px', padding: '14px' }}>
-                <span style={{ fontSize: '10px', color: '#38bdf8', fontWeight: 'bold', display: 'block', textTransform: 'uppercase', marginBottom: '6px' }}>Stage 1 — Profit Target</span>
-                <strong style={{ fontSize: '14px', color: '#fff', display: 'block', marginBottom: '4px' }}>Grow to $1,300</strong>
-                <span style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: '1.4', display: 'block' }}>Start with $1,000 and grow your balance to $1,300 (+30% profit). TP min 8 pips, SL max 3 pips.</span>
+                <span style={{ fontSize: '10px', color: '#38bdf8', fontWeight: 'bold', display: 'block', textTransform: 'uppercase', marginBottom: '6px' }}>Stage 1 — Demo Triplet Trade</span>
+                <strong style={{ fontSize: '14px', color: '#fff', display: 'block', marginBottom: '4px' }}>Win 3 Consecutive Trades (Practice)</strong>
+                <span style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: '1.4', display: 'block' }}>Get 3 consecutive wins in demo mode. 2 attempts per try. Auto-restarts on failure.</span>
               </div>
               <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--panel-border)', borderRadius: '16px', padding: '14px' }}>
-                <span style={{ fontSize: '10px', color: '#f59e0b', fontWeight: 'bold', display: 'block', textTransform: 'uppercase', marginBottom: '6px' }}>Stage 2 — Triplet Trade</span>
-                <strong style={{ fontSize: '14px', color: '#fff', display: 'block', marginBottom: '4px' }}>Win 3 Consecutive Trades</strong>
-                <span style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: '1.4', display: 'block' }}>Trade a triplet (3 trades). All 3 must be consecutive wins. You get 2 attempts. If both fail, you restart from Stage 1.</span>
+                <span style={{ fontSize: '10px', color: '#a855f7', fontWeight: 'bold', display: 'block', textTransform: 'uppercase', marginBottom: '6px' }}>Stage 2 — Demo Twice Trade</span>
+                <strong style={{ fontSize: '14px', color: '#fff', display: 'block', marginBottom: '4px' }}>Win 2 Consecutive Trades (Practice)</strong>
+                <span style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: '1.4', display: 'block' }}>Get 2 consecutive wins in demo mode. 2 attempts. Failure resets to Stage 1.</span>
+              </div>
+              <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--panel-border)', borderRadius: '16px', padding: '14px' }}>
+                <span style={{ fontSize: '10px', color: '#f59e0b', fontWeight: 'bold', display: 'block', textTransform: 'uppercase', marginBottom: '6px' }}>Stage 3 — Real Choice Trade</span>
+                <strong style={{ fontSize: '14px', color: '#fff', display: 'block', marginBottom: '4px' }}>Choose your target for real</strong>
+                <span style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: '1.4', display: 'block' }}>Choose between Triplet or Twice trade. Pass to earn ₹800 Cash Prize + Funded Status. Failure resets to Stage 1.</span>
               </div>
             </div>
 
@@ -442,57 +448,104 @@ const TradingPlatform = () => {
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
                 <Trophy size={16} color="#38bdf8" />
                 <strong style={{ fontSize: '13px', color: '#fff' }}>
-                  {activeChallengeAccount.currentStage === 1 ? 'Stage 1 — Profit Target' : 'Stage 2 — Triplet Trade'}
+                  {activeChallengeAccount.currentStage === 1 ? 'Stage 1 — Demo Triplet Trade' : 
+                   activeChallengeAccount.currentStage === 2 ? 'Stage 2 — Demo Twice Trade' : 
+                   'Stage 3 — Real Choice Trade'}
                 </strong>
+                <span style={{
+                  padding: '2px 6px',
+                  borderRadius: '4px',
+                  fontSize: '9px',
+                  fontWeight: 'bold',
+                  background: activeChallengeAccount.currentStage < 3 ? 'rgba(56, 189, 248, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+                  color: activeChallengeAccount.currentStage < 3 ? '#38bdf8' : 'var(--buy-color)',
+                  marginLeft: 'auto'
+                }}>
+                  {activeChallengeAccount.currentStage < 3 ? 'DEMO' : 'REAL'}
+                </span>
               </div>
               
-              {activeChallengeAccount.currentStage === 1 && (
+              {activeChallengeAccount.currentStage < 3 && activeChallengeAccount.progress && (
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '6px' }}>
-                    <span style={{ color: 'var(--text-secondary)' }}>Target: $1,300</span>
-                    <span style={{ color: '#38bdf8', fontWeight: 'bold' }}>${balance.toFixed(2)} / $1,300</span>
-                  </div>
-                  <div style={{ height: '6px', background: 'rgba(0,0,0,0.4)', borderRadius: '3px', overflow: 'hidden' }}>
-                    <div style={{
-                      width: `${Math.max(0, Math.min(100, ((balance - 1000) / 300) * 100))}%`,
-                      height: '100%',
-                      background: '#38bdf8',
-                      borderRadius: '3px',
-                      transition: 'width 0.3s ease'
-                    }} />
-                  </div>
-                  <span style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block', marginTop: '6px' }}>
-                    Grow balance from $1,000 to $1,300.
-                  </span>
-                </div>
-              )}
-
-              {activeChallengeAccount.currentStage === 3 && activeChallengeAccount.progress && (
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '6px' }}>
-                    <span style={{ color: 'var(--text-secondary)' }}>Target: 3 Consecutive Wins</span>
+                    <span style={{ color: 'var(--text-secondary)' }}>Target: {activeChallengeAccount.currentStage === 1 ? 3 : 2} Consecutive Wins</span>
                     <span style={{ color: '#ef4444', fontSize: '10px', fontWeight: '600' }}>⚠ A loss resets the streak</span>
-                    <span style={{ color: '#f59e0b', fontWeight: 'bold' }}>Streak: {activeChallengeAccount.progress.currentStreak} / 3</span>
+                    <span style={{ color: '#38bdf8', fontWeight: 'bold' }}>Streak: {activeChallengeAccount.progress.currentStreak} / {activeChallengeAccount.currentStage === 1 ? 3 : 2}</span>
                   </div>
                   <div style={{ display: 'flex', gap: '8px', margin: '8px 0' }}>
-                    {Array.from({ length: 3 }).map((_, idx) => {
+                    {Array.from({ length: activeChallengeAccount.currentStage === 1 ? 3 : 2 }).map((_, idx) => {
                       const active = idx < activeChallengeAccount.progress.currentStreak;
                       return (
                         <div key={idx} style={{
                           flex: 1,
                           height: '12px',
-                          background: active ? 'linear-gradient(90deg, #f59e0b, #d97706)' : 'rgba(255,255,255,0.05)',
-                          border: active ? '1px solid #f59e0b' : '1px solid var(--panel-border)',
+                          background: active ? 'linear-gradient(90deg, #38bdf8, #0ea5e9)' : 'rgba(255,255,255,0.05)',
+                          border: active ? '1px solid #38bdf8' : '1px solid var(--panel-border)',
                           borderRadius: '6px',
-                          boxShadow: active ? '0 0 8px rgba(245, 158, 11, 0.3)' : 'none'
+                          boxShadow: active ? '0 0 8px rgba(56, 189, 248, 0.3)' : 'none'
                         }} />
                       );
                     })}
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-secondary)' }}>
                     <span>Attempt {(activeChallengeAccount.progress.tripletAttempts || 0) + 1} of 2</span>
-                    <span>A loss resets streak. 2 failed attempts = restart Stage 1.</span>
+                    <span>{activeChallengeAccount.currentStage === 1 ? 'Fail resets attempt.' : 'Fail resets to Stage 1.'}</span>
                   </div>
+                </div>
+              )}
+
+              {activeChallengeAccount.currentStage === 3 && activeChallengeAccount.progress && (
+                <div>
+                  {!activeChallengeAccount.progress.targetWins ? (
+                    <div style={{ padding: '10px', background: 'rgba(0,0,0,0.3)', borderRadius: '8px', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
+                      <p style={{ fontSize: '12px', color: '#f59e0b', marginBottom: '10px', fontWeight: 'bold', textAlign: 'center' }}>
+                        Select your Stage 3 Target to begin:
+                      </p>
+                      <div style={{ display: 'flex', gap: '10px' }}>
+                        <button 
+                          className="btn" 
+                          onClick={() => selectChallengeTarget(3)}
+                          style={{ flex: 1, padding: '8px', fontSize: '12px', background: 'rgba(245, 158, 11, 0.2)', color: '#f59e0b', border: '1px solid #f59e0b' }}
+                        >
+                          Triplet (3 Wins)
+                        </button>
+                        <button 
+                          className="btn" 
+                          onClick={() => selectChallengeTarget(2)}
+                          style={{ flex: 1, padding: '8px', fontSize: '12px', background: 'rgba(245, 158, 11, 0.2)', color: '#f59e0b', border: '1px solid #f59e0b' }}
+                        >
+                          Twice (2 Wins)
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '6px' }}>
+                        <span style={{ color: 'var(--text-secondary)' }}>Target: {activeChallengeAccount.progress.targetWins} Consecutive Wins</span>
+                        <span style={{ color: '#ef4444', fontSize: '10px', fontWeight: '600' }}>⚠ A loss resets the streak</span>
+                        <span style={{ color: '#f59e0b', fontWeight: 'bold' }}>Streak: {activeChallengeAccount.progress.currentStreak} / {activeChallengeAccount.progress.targetWins}</span>
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px', margin: '8px 0' }}>
+                        {Array.from({ length: activeChallengeAccount.progress.targetWins }).map((_, idx) => {
+                          const active = idx < activeChallengeAccount.progress.currentStreak;
+                          return (
+                            <div key={idx} style={{
+                              flex: 1,
+                              height: '12px',
+                              background: active ? 'linear-gradient(90deg, #f59e0b, #d97706)' : 'rgba(255,255,255,0.05)',
+                              border: active ? '1px solid #f59e0b' : '1px solid var(--panel-border)',
+                              borderRadius: '6px',
+                              boxShadow: active ? '0 0 8px rgba(245, 158, 11, 0.3)' : 'none'
+                            }} />
+                          );
+                        })}
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-secondary)' }}>
+                        <span>Attempt {(activeChallengeAccount.progress.tripletAttempts || 0) + 1} of 2</span>
+                        <span>A loss resets streak. 2 failed attempts = restart Stage 1.</span>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
             </div>
