@@ -418,16 +418,6 @@ const TradingPlatform = () => {
                   Stage {activeChallengeAccount.currentStage}
                 </div>
               </div>
-              <div className="stat-box">
-                <div className="stat-label">Account Balance</div>
-                <div className="stat-value" style={{ fontSize: '18px' }}>
-                  ${balance.toFixed(2)} <span style={{fontSize:'11px', color:'var(--text-secondary)'}}>USD</span>
-                </div>
-              </div>
-              <div className="stat-box">
-                <div className="stat-label">Trades Count</div>
-                <div className="stat-value" style={{ fontSize: '18px' }}>{trades.length}</div>
-              </div>
             </div>
           ) : (
             <div className="wallet-stats">
