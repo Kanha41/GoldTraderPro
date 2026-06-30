@@ -180,7 +180,10 @@ const ChallengeScreen = () => {
             {activeChallengeAccount ? (
               <>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px', background: 'rgba(0,0,0,0.2)', padding: '12px', borderRadius: '8px', border: '1px solid var(--panel-border)' }}>
-
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>Account Balance:</span>
+                    <strong style={{ color: '#fff' }}>${parseFloat(activeChallengeAccount.balance).toFixed(2)} USD</strong>
+                  </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
                     <span style={{ color: 'var(--text-secondary)' }}>Current Stage:</span>
                     <strong style={{ color: 'var(--buy-color)' }}>Stage {activeChallengeAccount.currentStage}</strong>
