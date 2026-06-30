@@ -13,7 +13,7 @@ export const AppProvider = ({ children }) => {
   const [trades, setTrades] = useState([]);
   const [accountType, setAccountType] = useState(() => {
     const saved = localStorage.getItem('accountType');
-    return saved ? saved : 'REAL';
+    return saved || 'CHALLENGE';
   });
   const [verification, setVerification] = useState(null);
   const [activeChallengeAccount, setActiveChallengeAccount] = useState(null);

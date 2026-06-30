@@ -280,33 +280,17 @@ const ProfileDashboard = () => {
               position: 'absolute',
               top: '2px',
               bottom: '2px',
-              left: accountType === 'REAL' 
-                ? '2px' 
-                : accountType === 'CHALLENGE' 
-                  ? 'calc((100% - 4px) / 3 + 2px)' 
-                  : 'calc((100% - 4px) * 2 / 3 + 2px)',
-              width: 'calc((100% - 4px) / 3)',
-              background: accountType === 'REAL' 
-                ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(16, 185, 129, 0.1))'
-                : accountType === 'CHALLENGE'
-                  ? 'linear-gradient(135deg, rgba(56, 189, 248, 0.25), rgba(14, 165, 233, 0.15))'
-                  : 'linear-gradient(135deg, rgba(234, 179, 8, 0.25), rgba(217, 119, 6, 0.15))',
-              border: accountType === 'REAL' 
-                ? '1px solid rgba(16, 185, 129, 0.4)' 
-                : accountType === 'CHALLENGE'
-                  ? '1px solid rgba(56, 189, 248, 0.4)'
-                  : '1px solid rgba(234, 179, 8, 0.4)',
+              left: '2px',
+              width: 'calc(100% - 4px)',
+              background: 'linear-gradient(135deg, rgba(56, 189, 248, 0.25), rgba(14, 165, 233, 0.15))',
+              border: '1px solid rgba(56, 189, 248, 0.4)',
               borderRadius: '28px',
               transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              boxShadow: accountType === 'REAL' 
-                ? '0 0 10px rgba(16, 185, 129, 0.2)' 
-                : accountType === 'CHALLENGE'
-                  ? '0 0 10px rgba(56, 189, 248, 0.2)'
-                  : '0 0 10px rgba(234, 179, 8, 0.2)',
+              boxShadow: '0 0 10px rgba(56, 189, 248, 0.2)',
               zIndex: 1
             }} />
             
-            <button 
+            {/* <button 
               onClick={() => setAccountType('REAL')}
               className="account-switcher-btn"
               style={{
@@ -316,21 +300,22 @@ const ProfileDashboard = () => {
               }}
             >
               Real
-            </button>
+            </button> */}
 
             <button 
               onClick={() => setAccountType('CHALLENGE')}
               className="account-switcher-btn"
               style={{
-                color: accountType === 'CHALLENGE' ? '#38bdf8' : 'var(--text-secondary)',
+                color: '#38bdf8',
                 fontSize: '13px',
-                textShadow: accountType === 'CHALLENGE' ? '0 0 8px rgba(56, 189, 248, 0.3)' : 'none'
+                textShadow: '0 0 8px rgba(56, 189, 248, 0.3)',
+                width: '100%'
               }}
             >
-              Challenge
+              Free Fund
             </button>
             
-            <button 
+            {/* <button 
               onClick={() => setAccountType('DEMO')}
               className="account-switcher-btn"
               style={{
@@ -340,7 +325,7 @@ const ProfileDashboard = () => {
               }}
             >
               Demo
-            </button>
+            </button> */}
           </div>
 
           {/* Challenge progress metrics card on Profile tab */}

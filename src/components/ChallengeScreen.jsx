@@ -19,8 +19,9 @@ import {
 
 const RRR_OPTIONS = [
   { ratio: '1:10', label: '1 : 10', slPips: 5, tpPips: 50, prize: 10000, color: '#a855f7', glow: 'rgba(168,85,247,0.3)', desc: 'High reward, hardest to maintain mentally', recommended: false },
-  { ratio: '1:5',  label: '1 : 5',  slPips: 5, tpPips: 25, prize: 60000, color: '#f59e0b', glow: 'rgba(245,158,11,0.3)', desc: 'Great reward for confident traders', recommended: false },
-  { ratio: '1:4',  label: '1 : 4',  slPips: 5, tpPips: 20, prize: 5000,  color: '#10b981', glow: 'rgba(16,185,129,0.3)', desc: 'Best for beginners — forgiving and achievable', recommended: true }
+  { ratio: '1:5',  label: '1 : 5',  slPips: 5, tpPips: 25, prize: 6000, color: '#f59e0b', glow: 'rgba(245,158,11,0.3)', desc: 'Great reward for confident traders', recommended: false },
+  { ratio: '1:4',  label: '1 : 4',  slPips: 5, tpPips: 20, prize: 5000,  color: '#10b981', glow: 'rgba(16,185,129,0.3)', desc: 'Best for beginners — forgiving and achievable', recommended: true },
+  { ratio: '1:2.5', label: '1 : 2.5', slPips: 5, tpPips: 12.5, prize: 2500, color: '#38bdf8', glow: 'rgba(56,189,248,0.3)', desc: 'Quick wins, great for consistency', recommended: false }
 ];
 
 const ChallengeScreen = () => {
@@ -220,10 +221,10 @@ const ChallengeScreen = () => {
             <Trophy size={36} color="#000" />
           </div>
           <h2 style={{ fontSize: '28px', fontWeight: '700', letterSpacing: '-0.02em', margin: '0 0 5px 0' }}>
-            Trading Challenges
+            Free Fund
           </h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '13px', margin: 0 }}>
-            Enroll in our 3-Stage Funded Challenge to win cash prizes and funded status.
+            Prove your skills in demo mode to earn a real funded account.
           </p>
         </div>
 
@@ -317,15 +318,9 @@ const ChallengeScreen = () => {
                   )}
                   {activeChallengeAccount.currentStage === 3 && activeChallengeAccount.progress && (
                     <div style={{ fontSize: '12px', marginTop: '4px' }}>
-                      {!activeChallengeAccount.progress.targetWins ? (
-                        <strong style={{ color: '#f59e0b', fontSize: '11px' }}>Action Required: Select Target in Trade View</strong>
-                      ) : (
-                        <>
-                          <span style={{ color: '#ef4444', fontSize: '11px', fontWeight: '600', display: 'block', marginBottom: '3px' }}>⚠ A loss resets the streak</span>
-                          <span style={{ color: 'var(--text-secondary)' }}>Target:</span> <strong style={{ color: '#f59e0b' }}>{activeChallengeAccount.progress.currentStreak} of {activeChallengeAccount.progress.targetWins} wins</strong> in a row<br/>
-                          <span style={{ color: 'var(--text-secondary)' }}>Attempt:</span> <strong>{(activeChallengeAccount.progress.tripletAttempts || 0) + 1} / 2</strong>
-                        </>
-                      )}
+                      <span style={{ color: '#ef4444', fontSize: '11px', fontWeight: '600', display: 'block', marginBottom: '3px' }}>⚠ A loss resets the streak</span>
+                      <span style={{ color: 'var(--text-secondary)' }}>Target:</span> <strong style={{ color: '#f59e0b' }}>{activeChallengeAccount.progress.currentStreak} of {activeChallengeAccount.progress.targetWins} wins</strong> in a row<br/>
+                      <span style={{ color: 'var(--text-secondary)' }}>Attempt:</span> <strong>{(activeChallengeAccount.progress.tripletAttempts || 0) + 1} / 2</strong>
                     </div>
                   )}
                 </div>

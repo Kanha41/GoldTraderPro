@@ -8,7 +8,7 @@ const MobileNavBar = ({ activeTab }) => {
 
   const tabs = [
     { id: 'trade', label: 'Home', icon: Home, path: '/' },
-    { id: 'challenge', label: 'Challenge', icon: Trophy, path: '/challenge' },
+    { id: 'challenge', label: 'Free Fund', icon: Trophy, path: '/challenge' },
     { id: 'history', label: 'History', icon: Clock, path: '/history' },
     { id: 'me', label: 'Me', icon: User, path: '/profile' }
   ];

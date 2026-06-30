@@ -1159,8 +1159,9 @@ app.post('/api/admin/approve-transaction', authenticateToken, checkAdmin, async 
 
 // RRR config — SL always 5 pips, TP = 5 × reward multiplier
 const RRR_CONFIG = {
+  '1:2.5': { slPips: 5, tpPips: 12.5, prize: 2500 },
   '1:4':  { slPips: 5, tpPips: 20, prize: 5000 },
-  '1:5':  { slPips: 5, tpPips: 25, prize: 60000 },
+  '1:5':  { slPips: 5, tpPips: 25, prize: 6000 },
   '1:10': { slPips: 5, tpPips: 50, prize: 10000 }
 };
 
@@ -1169,7 +1170,7 @@ app.post('/api/challenge-account/enroll', authenticateToken, async (req, res) =>
   const { riskRewardRatio } = req.body;
 
   if (!riskRewardRatio || !RRR_CONFIG[riskRewardRatio]) {
-    return res.status(400).json({ success: false, message: 'Please select a valid Risk-Reward Ratio (1:4, 1:5, or 1:10).' });
+    return res.status(400).json({ success: false, message: 'Please select a valid Risk-Reward Ratio.' });
   }
 
   const t = await sequelize.transaction();
@@ -1512,7 +1513,7 @@ app.post('/api/challenge-account/trade/complete', authenticateToken, async (req,
             progress.tradeCount = 0;
             progress.currentStreak = 0;
             progress.tripletAttempts = 0;
-            progress.targetWins = null;
+            progress.targetWins = 3;
             await progress.save({ transaction: t });
           }
         } else {
@@ -1614,7 +1615,7 @@ app.post('/api/challenge-account/trade/complete', authenticateToken, async (req,
             progress.currentStreak = 0;
             progress.tripletAttempts = 0;
             if (resetStage === 3) {
-              progress.targetWins = null;
+              progress.targetWins = 3;
             }
           }
           await progress.save({ transaction: t });

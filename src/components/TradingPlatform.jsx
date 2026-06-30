@@ -23,7 +23,7 @@ const RRR_OPTIONS = [
     label: '1 : 5',
     slPips: 5,
     tpPips: 25,
-    prize: 60000,
+    prize: 6000,
     color: '#f59e0b',
     glow: 'rgba(245,158,11,0.3)',
     desc: 'Great reward for confident traders',
@@ -39,6 +39,17 @@ const RRR_OPTIONS = [
     glow: 'rgba(16,185,129,0.3)',
     desc: 'Best for beginners — forgiving and achievable',
     recommended: true
+  },
+  {
+    ratio: '1:2.5',
+    label: '1 : 2.5',
+    slPips: 5,
+    tpPips: 12.5,
+    prize: 2500,
+    color: '#38bdf8',
+    glow: 'rgba(56,189,248,0.3)',
+    desc: 'Quick wins, great for consistency',
+    recommended: false
   }
 ];
 
@@ -325,17 +336,17 @@ const TradingPlatform = () => {
               position: 'absolute',
               top: '2px',
               bottom: '2px',
-              left: 'calc((100% - 4px) / 3 + 2px)',
-              width: 'calc((100% - 4px) / 3)',
+              left: '2px',
+              width: 'calc(100% - 4px)',
               background: 'linear-gradient(135deg, rgba(56, 189, 248, 0.25), rgba(14, 165, 233, 0.15))',
               border: '1px solid rgba(56, 189, 248, 0.4)',
               borderRadius: '28px',
               boxShadow: '0 0 10px rgba(56, 189, 248, 0.2)',
               zIndex: 1
             }} />
-            <button className="account-switcher-btn" onClick={() => setAccountType('REAL')} style={{ color: 'var(--text-secondary)', textShadow: 'none' }}>Real</button>
-            <button className="account-switcher-btn" onClick={() => setAccountType('CHALLENGE')} style={{ color: '#38bdf8', textShadow: '0 0 8px rgba(56, 189, 248, 0.3)' }}>Challenge</button>
-            <button className="account-switcher-btn" onClick={() => setAccountType('DEMO')} style={{ color: 'var(--text-secondary)', textShadow: 'none' }}>Demo</button>
+            {/* <button className="account-switcher-btn" onClick={() => setAccountType('REAL')} style={{ color: 'var(--text-secondary)', textShadow: 'none' }}>Real</button> */}
+            <button className="account-switcher-btn" onClick={() => setAccountType('CHALLENGE')} style={{ color: '#38bdf8', textShadow: '0 0 8px rgba(56, 189, 248, 0.3)', width: '100%' }}>Free Fund</button>
+            {/* <button className="account-switcher-btn" onClick={() => setAccountType('DEMO')} style={{ color: 'var(--text-secondary)', textShadow: 'none' }}>Demo</button> */}
           </div>
         </header>
 
@@ -364,7 +375,7 @@ const TradingPlatform = () => {
             </div>
 
             <h2 style={{ fontSize: '30px', fontWeight: '800', color: '#fff', marginBottom: '10px', letterSpacing: '-0.03em' }}>
-              Funded Challenge
+              Free Fund
             </h2>
             <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '30px', lineHeight: '1.6' }}>
               Prove your trading skill! Pass the Profit Target then win a Triplet Trade to earn Cash Prize + Funded Status.
@@ -457,33 +468,17 @@ const TradingPlatform = () => {
             position: 'absolute',
             top: '2px',
             bottom: '2px',
-            left: accountType === 'REAL' 
-              ? '2px' 
-              : accountType === 'CHALLENGE' 
-                ? 'calc((100% - 4px) / 3 + 2px)' 
-                : 'calc((100% - 4px) * 2 / 3 + 2px)',
-            width: 'calc((100% - 4px) / 3)',
-            background: accountType === 'REAL' 
-              ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(16, 185, 129, 0.1))'
-              : accountType === 'CHALLENGE'
-                ? 'linear-gradient(135deg, rgba(56, 189, 248, 0.25), rgba(14, 165, 233, 0.15))'
-                : 'linear-gradient(135deg, rgba(234, 179, 8, 0.25), rgba(217, 119, 6, 0.15))',
-            border: accountType === 'REAL' 
-              ? '1px solid rgba(16, 185, 129, 0.4)' 
-              : accountType === 'CHALLENGE'
-                ? '1px solid rgba(56, 189, 248, 0.4)'
-                : '1px solid rgba(234, 179, 8, 0.4)',
+            left: '2px',
+            width: 'calc(100% - 4px)',
+            background: 'linear-gradient(135deg, rgba(56, 189, 248, 0.25), rgba(14, 165, 233, 0.15))',
+            border: '1px solid rgba(56, 189, 248, 0.4)',
             borderRadius: '28px',
             transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-            boxShadow: accountType === 'REAL' 
-              ? '0 0 10px rgba(16, 185, 129, 0.2)' 
-              : accountType === 'CHALLENGE'
-                ? '0 0 10px rgba(56, 189, 248, 0.2)'
-                : '0 0 10px rgba(234, 179, 8, 0.2)',
+            boxShadow: '0 0 10px rgba(56, 189, 248, 0.2)',
             zIndex: 1
           }} />
           
-          <button 
+          {/* <button 
             className="account-switcher-btn"
             onClick={() => setAccountType('REAL')}
             style={{
@@ -492,20 +487,21 @@ const TradingPlatform = () => {
             }}
           >
             Real
-          </button>
+          </button> */}
 
           <button 
             className="account-switcher-btn"
             onClick={() => setAccountType('CHALLENGE')}
             style={{
-              color: accountType === 'CHALLENGE' ? '#38bdf8' : 'var(--text-secondary)',
-              textShadow: accountType === 'CHALLENGE' ? '0 0 8px rgba(56, 189, 248, 0.3)' : 'none'
+              color: '#38bdf8',
+              textShadow: '0 0 8px rgba(56, 189, 248, 0.3)',
+              width: '100%'
             }}
           >
-            Challenge
+            Free Fund
           </button>
           
-          <button 
+          {/* <button 
             className="account-switcher-btn"
             onClick={() => setAccountType('DEMO')}
             title="Demo money cannot be withdrawn"
@@ -515,7 +511,7 @@ const TradingPlatform = () => {
             }}
           >
             Demo
-          </button>
+          </button> */}
         </div>
 
         <div className="header-actions">
@@ -656,29 +652,7 @@ const TradingPlatform = () => {
 
               {activeChallengeAccount.currentStage === 3 && activeChallengeAccount.progress && (
                 <div>
-                  {!activeChallengeAccount.progress.targetWins ? (
-                    <div style={{ padding: '10px', background: 'rgba(0,0,0,0.3)', borderRadius: '8px', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
-                      <p style={{ fontSize: '12px', color: '#f59e0b', marginBottom: '10px', fontWeight: 'bold', textAlign: 'center' }}>
-                        Select your Stage 3 Target to begin:
-                      </p>
-                      <div style={{ display: 'flex', gap: '10px' }}>
-                        <button 
-                          className="btn" 
-                          onClick={() => selectChallengeTarget(3)}
-                          style={{ flex: 1, padding: '8px', fontSize: '12px', background: 'rgba(245, 158, 11, 0.2)', color: '#f59e0b', border: '1px solid #f59e0b' }}
-                        >
-                          Triplet (3 Wins)
-                        </button>
-                        <button 
-                          className="btn" 
-                          onClick={() => selectChallengeTarget(2)}
-                          style={{ flex: 1, padding: '8px', fontSize: '12px', background: 'rgba(245, 158, 11, 0.2)', color: '#f59e0b', border: '1px solid #f59e0b' }}
-                        >
-                          Twice (2 Wins)
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
+                  {/* Removed manual target selection since it is fixed to 3 */}
                     <>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '6px' }}>
                         <span style={{ color: 'var(--text-secondary)' }}>Target: {activeChallengeAccount.progress.targetWins} Consecutive Wins</span>
@@ -705,7 +679,6 @@ const TradingPlatform = () => {
                         <span>A loss resets streak. 2 failed attempts = restart Stage 1.</span>
                       </div>
                     </>
-                  )}
                 </div>
               )}
             </div>

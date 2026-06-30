@@ -141,7 +141,7 @@ const ChallengeAccountSchema = new mongoose.Schema({
   challengeStatus: { type: String, default: 'ACTIVE' },
   currentStage: { type: Number, default: 1 },
   highestBalance: { type: Number, default: 1000.00 },
-  riskRewardRatio: { type: String, default: '1:4', enum: ['1:4', '1:5', '1:10'] }
+  riskRewardRatio: { type: String, default: '1:4', enum: ['1:2.5', '1:4', '1:5', '1:10'] }
 }, {
   timestamps: true,
   toJSON: { virtuals: true },
