@@ -445,6 +445,77 @@ const AdminPanel = () => {
     );
   };
 
+  const getChallengeHistory = (stages) => {
+    let historyRecords = [];
+    adminRecords.forEach(user => {
+      if (user.challengeAccounts) {
+        user.challengeAccounts.forEach(account => {
+          if (account.history) {
+            account.history.forEach(record => {
+              if (stages.includes(record.stage)) {
+                historyRecords.push({ ...record, username: user.username });
+              }
+            });
+          }
+        });
+      }
+    });
+    // Sort descending by date
+    historyRecords.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    return historyRecords;
+  };
+
+  const renderChallengeHistoryTable = (records) => {
+    if (records.length === 0) return <p style={{ color: 'var(--text-secondary)' }}>No challenge records found.</p>;
+
+    return (
+      <div className="admin-table-wrapper">
+        <table className="admin-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Username</th>
+              <th>Stage</th>
+              <th>Attempt #</th>
+              <th>Status</th>
+              <th>Trades Taken</th>
+              <th>Streak Reached</th>
+              <th>Details</th>
+            </tr>
+          </thead>
+          <tbody>
+            {records.map((req, i) => (
+              <tr key={i}>
+                <td>{new Date(req.createdAt).toLocaleString()}</td>
+                <td><strong style={{ color: '#fff' }}>{req.username}</strong></td>
+                <td>Stage {req.stage}</td>
+                <td>{req.attemptNumber}</td>
+                <td>
+                  <span className={`status-badge status-${req.status.toLowerCase()}`}>
+                    {req.status}
+                  </span>
+                </td>
+                <td>{req.tradesTaken}</td>
+                <td>{req.streakReached}</td>
+                <td><span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{req.details}</span></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
+  const renderChallengeDemo = () => {
+    const records = getChallengeHistory([1, 2]);
+    return renderChallengeHistoryTable(records);
+  };
+
+  const renderChallengeReal = () => {
+    const records = getChallengeHistory([3]);
+    return renderChallengeHistoryTable(records);
+  };
+
   const usersWithBuy = adminRecords.filter(user => user.trades && user.trades.some(t => t.type === 'BUY')).length;
   const usersWithSell = adminRecords.filter(user => user.trades && user.trades.some(t => t.type === 'SELL')).length;
 
@@ -509,6 +580,12 @@ const AdminPanel = () => {
           <button className={`tab ${activeTab === 'support' ? 'active' : ''}`} onClick={() => setActiveTab('support')}>
             Support Tickets
           </button>
+          <button className={`tab ${activeTab === 'challenge-demo' ? 'active' : ''}`} onClick={() => setActiveTab('challenge-demo')}>
+            Challenge Demo
+          </button>
+          <button className={`tab ${activeTab === 'challenge-real' ? 'active' : ''}`} onClick={() => setActiveTab('challenge-real')}>
+            Challenge Real
+          </button>
         </div>
 
         <div style={{ marginTop: '20px' }}>
@@ -517,6 +594,8 @@ const AdminPanel = () => {
           {activeTab === 'trades' && renderTrades()}
           {activeTab === 'feedback' && renderFeedbacks()}
           {activeTab === 'support' && renderSupportTickets()}
+          {activeTab === 'challenge-demo' && renderChallengeDemo()}
+          {activeTab === 'challenge-real' && renderChallengeReal()}
         </div>
       </div>
     </div>

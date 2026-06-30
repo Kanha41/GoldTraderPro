@@ -114,7 +114,8 @@ async function getUserWithAssociations(userId) {
         as: 'challengeAccounts',
         include: [
           { model: ChallengeProgress, as: 'progress' },
-          { model: ChallengeTrade, as: 'trades' }
+          { model: ChallengeTrade, as: 'trades' },
+          { model: ChallengeAttemptHistory, as: 'history' }
         ]
       }
     ]
@@ -1418,6 +1419,17 @@ app.post('/api/challenge-account/trade/complete', authenticateToken, async (req,
           await progress.save({ transaction: t });
 
           if (progress.currentStreak >= 3) {
+            await ChallengeAttemptHistory.create({
+              accountId: challengeAccount.id,
+              userId: userObj.id,
+              stage: 1,
+              status: 'PASSED',
+              tradesTaken: progress.tradeCount,
+              streakReached: progress.currentStreak,
+              attemptNumber: progress.tripletAttempts + 1,
+              details: `Passed Stage 1 (Demo) on attempt ${progress.tripletAttempts + 1}`
+            }, { transaction: t });
+
             challengeAccount.currentStage = 2;
             challengeAccount.balance = 1000.00;
             challengeAccount.equity = 1000.00;
@@ -1433,6 +1445,17 @@ app.post('/api/challenge-account/trade/complete', authenticateToken, async (req,
             await progress.save({ transaction: t });
           }
         } else {
+          await ChallengeAttemptHistory.create({
+            accountId: challengeAccount.id,
+            userId: userObj.id,
+            stage: 1,
+            status: 'FAILED',
+            tradesTaken: progress.tradeCount,
+            streakReached: progress.currentStreak,
+            attemptNumber: progress.tripletAttempts + 1,
+            details: `Failed Stage 1 (Demo) attempt ${progress.tripletAttempts + 1} at trade ${progress.tradeCount}`
+          }, { transaction: t });
+
           progress.tripletAttempts += 1;
           progress.currentStreak = 0;
           progress.tradeCount = 0;
@@ -1457,6 +1480,17 @@ app.post('/api/challenge-account/trade/complete', authenticateToken, async (req,
           await progress.save({ transaction: t });
 
           if (progress.currentStreak >= 2) {
+            await ChallengeAttemptHistory.create({
+              accountId: challengeAccount.id,
+              userId: userObj.id,
+              stage: 2,
+              status: 'PASSED',
+              tradesTaken: progress.tradeCount,
+              streakReached: progress.currentStreak,
+              attemptNumber: progress.tripletAttempts + 1,
+              details: `Passed Stage 2 (Demo) on attempt ${progress.tripletAttempts + 1}`
+            }, { transaction: t });
+
             challengeAccount.currentStage = 3;
             challengeAccount.balance = 1000.00;
             challengeAccount.equity = 1000.00;
@@ -1472,6 +1506,17 @@ app.post('/api/challenge-account/trade/complete', authenticateToken, async (req,
             await progress.save({ transaction: t });
           }
         } else {
+          await ChallengeAttemptHistory.create({
+            accountId: challengeAccount.id,
+            userId: userObj.id,
+            stage: 2,
+            status: 'FAILED',
+            tradesTaken: progress.tradeCount,
+            streakReached: progress.currentStreak,
+            attemptNumber: progress.tripletAttempts + 1,
+            details: `Failed Stage 2 (Demo) attempt ${progress.tripletAttempts + 1} at trade ${progress.tradeCount}`
+          }, { transaction: t });
+
           progress.tripletAttempts += 1;
           progress.currentStreak = 0;
           progress.tradeCount = 0;
@@ -1500,6 +1545,17 @@ app.post('/api/challenge-account/trade/complete', authenticateToken, async (req,
           await progress.save({ transaction: t });
 
           if (progress.currentStreak >= targetWins) {
+            await ChallengeAttemptHistory.create({
+              accountId: challengeAccount.id,
+              userId: userObj.id,
+              stage: 3,
+              status: 'PASSED',
+              tradesTaken: progress.tradeCount,
+              streakReached: progress.currentStreak,
+              attemptNumber: progress.tripletAttempts + 1,
+              details: `Passed Stage 3 (Real) on attempt ${progress.tripletAttempts + 1} (Target: ${targetWins})`
+            }, { transaction: t });
+
             // PASSED the challenge!
             challengeAccount.challengeStatus = 'PASSED';
 
@@ -1516,6 +1572,17 @@ app.post('/api/challenge-account/trade/complete', authenticateToken, async (req,
             }, { transaction: t });
           }
         } else {
+          await ChallengeAttemptHistory.create({
+            accountId: challengeAccount.id,
+            userId: userObj.id,
+            stage: 3,
+            status: 'FAILED',
+            tradesTaken: progress.tradeCount,
+            streakReached: progress.currentStreak,
+            attemptNumber: progress.tripletAttempts + 1,
+            details: `Failed Stage 3 (Real) attempt ${progress.tripletAttempts + 1} at trade ${progress.tradeCount} (Target: ${targetWins})`
+          }, { transaction: t });
+
           // Loss in triplet – count as a failed attempt
           progress.tripletAttempts += 1;
           progress.currentStreak = 0;

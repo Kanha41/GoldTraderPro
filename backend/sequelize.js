@@ -179,6 +179,20 @@ const ChallengeTradeSchema = new mongoose.Schema({
   timestamps: false,
   toJSON: { virtuals: true },
   toObject: { virtuals: true }
+const ChallengeAttemptHistorySchema = new mongoose.Schema({
+  accountId: { type: String, required: true, ref: 'ChallengeAccount' },
+  userId: { type: String, required: true, ref: 'User' },
+  stage: { type: Number, required: true },
+  status: { type: String, required: true, enum: ['PASSED', 'FAILED'] },
+  tradesTaken: { type: Number, default: 0 },
+  streakReached: { type: Number, default: 0 },
+  attemptNumber: { type: Number, default: 1 },
+  details: { type: String, default: '' },
+  createdAt: { type: Date, default: Date.now }
+}, {
+  timestamps: false,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
 });
 
 // --- VIRTUAL RELATIONSHIPS (for population) ---
@@ -237,6 +251,12 @@ ChallengeAccountSchema.virtual('trades', {
 
 // --- MONGOOSE MODELS ---
 
+ChallengeAccountSchema.virtual('history', {
+  ref: 'ChallengeAttemptHistory',
+  localField: '_id',
+  foreignField: 'accountId'
+});
+
 const RawUser = mongoose.model('User', UserSchema);
 const RawTrade = mongoose.model('Trade', TradeSchema);
 const RawTransaction = mongoose.model('Transaction', TransactionSchema);
@@ -246,6 +266,7 @@ const RawTradeChallengeData = mongoose.model('TradeChallengeData', TradeChalleng
 const RawChallengeAccount = mongoose.model('ChallengeAccount', ChallengeAccountSchema);
 const RawChallengeProgress = mongoose.model('ChallengeProgress', ChallengeProgressSchema);
 const RawChallengeTrade = mongoose.model('ChallengeTrade', ChallengeTradeSchema);
+const RawChallengeAttemptHistory = mongoose.model('ChallengeAttemptHistory', ChallengeAttemptHistorySchema);
 
 // --- SEQUELIZE COMPATIBILITY LAYER ---
 
@@ -426,6 +447,7 @@ const TradeChallengeData = wrapModel(RawTradeChallengeData);
 const ChallengeAccount = wrapModel(RawChallengeAccount);
 const ChallengeProgress = wrapModel(RawChallengeProgress);
 const ChallengeTrade = wrapModel(RawChallengeTrade);
+const ChallengeAttemptHistory = wrapModel(RawChallengeAttemptHistory);
 
 const Op = {
   or: Symbol('or'),
@@ -443,5 +465,6 @@ module.exports = {
   TradeChallengeData,
   ChallengeAccount,
   ChallengeProgress,
-  ChallengeTrade
+  ChallengeTrade,
+  ChallengeAttemptHistory
 };
