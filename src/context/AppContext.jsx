@@ -627,11 +627,12 @@ export const AppProvider = ({ children }) => {
   };
 
   // 3-Stage Challenge Actions
-  const enrollChallengeAccount = async () => {
+  const enrollChallengeAccount = async (riskRewardRatio) => {
     try {
       const res = await fetch(`${API_URL}/api/challenge-account/enroll`, {
         method: 'POST',
-        headers: getAuthHeaders()
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ riskRewardRatio })
       });
       const data = await res.json();
       if (data.success) {

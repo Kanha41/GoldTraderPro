@@ -1,11 +1,46 @@
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../context/useAppContext';
 import { useNavigate } from 'react-router-dom';
-import { Settings, LogOut, Wallet, ArrowUpRight, ArrowDownRight, Info, AlertTriangle, X, Trophy } from 'lucide-react';
+import { Settings, LogOut, Wallet, ArrowUpRight, ArrowDownRight, Info, AlertTriangle, X, Trophy, Lock, Star } from 'lucide-react';
 import TradingViewChart from './TradingViewChart';
 import MobileNavBar from './MobileNavBar';
 import DepositModal from './DepositModal';
 
+const RRR_OPTIONS = [
+  {
+    ratio: '1:10',
+    label: '1 : 10',
+    slPips: 5,
+    tpPips: 50,
+    prize: 10000,
+    color: '#a855f7',
+    glow: 'rgba(168,85,247,0.3)',
+    desc: 'High reward, hardest to maintain mentally',
+    recommended: false
+  },
+  {
+    ratio: '1:5',
+    label: '1 : 5',
+    slPips: 5,
+    tpPips: 25,
+    prize: 60000,
+    color: '#f59e0b',
+    glow: 'rgba(245,158,11,0.3)',
+    desc: 'Great reward for confident traders',
+    recommended: false
+  },
+  {
+    ratio: '1:4',
+    label: '1 : 4',
+    slPips: 5,
+    tpPips: 20,
+    prize: 5000,
+    color: '#10b981',
+    glow: 'rgba(16,185,129,0.3)',
+    desc: 'Best for beginners — forgiving and achievable',
+    recommended: true
+  }
+];
 
 const TradingPlatform = () => {
   const { 
@@ -27,15 +62,24 @@ const TradingPlatform = () => {
   const navigate = useNavigate();
   
   const [toast, setToast] = useState(null);
+  const [showRrrModal, setShowRrrModal] = useState(false);
+  const [selectedRrr, setSelectedRrr] = useState('1:4');
+  const [enrollingRrr, setEnrollingRrr] = useState(false);
   
   const [quantity, setQuantity] = useState(1);
-  const [tpPips, setTpPips] = useState(8);
-  const [slPips, setSlPips] = useState(3);
   const [realTpPips, setRealTpPips] = useState(7);
   const [realSlPips, setRealSlPips] = useState(4);
   const [showDeposit, setShowDeposit] = useState(false);
   const [isProcessingOrder, setIsProcessingOrder] = useState(false);
   const isWeekend = [0,6].includes(new Date().getDay());
+
+  // Derive locked SL/TP from active challenge account's ratio
+  const lockedRrr = activeChallengeAccount?.riskRewardRatio || '1:4';
+  const lockedRrrCfg = RRR_OPTIONS.find(r => r.ratio === lockedRrr) || RRR_OPTIONS[2];
+  const computedSl = livePrice > 0 ? (livePrice - lockedRrrCfg.slPips).toFixed(2) : '—';
+  const computedTp = livePrice > 0 ? (livePrice + lockedRrrCfg.tpPips).toFixed(2) : '—';
+  const computedSlSell = livePrice > 0 ? (livePrice + lockedRrrCfg.slPips).toFixed(2) : '—';
+  const computedTpSell = livePrice > 0 ? (livePrice - lockedRrrCfg.tpPips).toFixed(2) : '—';
 
   // Scroll to top on mount to ensure the top part of the screen is always displayed
   useEffect(() => {
@@ -79,23 +123,12 @@ const TradingPlatform = () => {
         return;
       }
 
-      if (tpPips < 8) {
-        alert("Take Profit must be at least 8 pips.");
-        setIsProcessingOrder(false);
-        return;
-      }
-      if (slPips > 3) {
-        alert("Stop Loss must be at most 3 pips.");
-        setIsProcessingOrder(false);
-        return;
-      }
-
       const res = await addChallengeTrade({
         side: type,
         lotSize: quantity,
         currentPrice: livePrice,
-        tpPips: tpPips,
-        slPips: slPips
+        tpPips: lockedRrrCfg.tpPips,
+        slPips: lockedRrrCfg.slPips
       });
 
       if (res && res.success) {
@@ -142,10 +175,147 @@ const TradingPlatform = () => {
     setIsProcessingOrder(false);
   };
 
+  // RRR Enrollment Modal
+  const RrrModal = () => (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 9999,
+      background: 'rgba(0,0,0,0.85)',
+      backdropFilter: 'blur(6px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      padding: '20px'
+    }}>
+      <div style={{
+        background: 'linear-gradient(160deg, #0f172a 0%, #0b0e1a 100%)',
+        border: '1px solid rgba(56,189,248,0.3)',
+        borderRadius: '24px',
+        padding: '30px 24px',
+        maxWidth: '420px',
+        width: '100%',
+        boxShadow: '0 25px 60px rgba(0,0,0,0.7)'
+      }}>
+        {/* Header */}
+        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+          <div style={{
+            width: '56px', height: '56px', borderRadius: '16px',
+            background: 'linear-gradient(135deg, #38bdf8, #0ea5e9)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            margin: '0 auto 14px auto',
+            boxShadow: '0 0 24px rgba(56,189,248,0.4)'
+          }}>
+            <Trophy size={28} color="#000" />
+          </div>
+          <h2 style={{ fontSize: '22px', fontWeight: '800', color: '#fff', marginBottom: '6px' }}>Choose Your Risk-Reward Ratio</h2>
+          <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+            This sets your <strong style={{ color: '#f59e0b' }}>locked SL &amp; TP</strong> for every challenge trade.<br/>
+            <span style={{ color: '#ef4444', fontWeight: '600' }}>Cannot be changed until your real account is won.</span>
+          </p>
+        </div>
+
+        {/* Rule Banner */}
+        <div style={{
+          background: 'rgba(56,189,248,0.08)', border: '1px solid rgba(56,189,248,0.2)',
+          borderRadius: '10px', padding: '10px 14px', marginBottom: '20px',
+          fontSize: '11px', color: 'var(--text-secondary)', lineHeight: '1.6'
+        }}>
+          📏 <strong style={{ color: '#38bdf8' }}>Risk is always 1 (= 5 pips SL)</strong><br/>
+          E.g. at entry <strong>4344</strong> with <strong>1:4</strong>: SL = 4339 | TP = 4364
+        </div>
+
+        {/* RRR Cards */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '22px' }}>
+          {RRR_OPTIONS.map(opt => (
+            <div
+              key={opt.ratio}
+              onClick={() => setSelectedRrr(opt.ratio)}
+              style={{
+                position: 'relative',
+                background: selectedRrr === opt.ratio
+                  ? `linear-gradient(135deg, rgba(${opt.ratio==='1:10'?'168,85,247':opt.ratio==='1:5'?'245,158,11':'16,185,129'},0.18), rgba(${opt.ratio==='1:10'?'168,85,247':opt.ratio==='1:5'?'245,158,11':'16,185,129'},0.06))`
+                  : 'rgba(255,255,255,0.02)',
+                border: `1.5px solid ${selectedRrr === opt.ratio ? opt.color : 'rgba(255,255,255,0.07)'}`,
+                borderRadius: '14px',
+                padding: '14px 16px',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                boxShadow: selectedRrr === opt.ratio ? `0 0 16px ${opt.glow}` : 'none'
+              }}
+            >
+              {opt.recommended && (
+                <div style={{
+                  position: 'absolute', top: '-10px', right: '14px',
+                  background: 'linear-gradient(90deg, #10b981, #059669)',
+                  color: '#000', fontSize: '9px', fontWeight: '800',
+                  padding: '2px 10px', borderRadius: '20px',
+                  letterSpacing: '0.05em', textTransform: 'uppercase',
+                  display: 'flex', alignItems: 'center', gap: '4px'
+                }}>
+                  <Star size={8} fill="#000" /> Recommended
+                </div>
+              )}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <span style={{ fontSize: '20px', fontWeight: '900', color: opt.color, letterSpacing: '0.02em' }}>{opt.label}</span>
+                <span style={{
+                  fontSize: '11px', fontWeight: '700',
+                  background: 'rgba(255,255,255,0.06)', borderRadius: '8px',
+                  padding: '3px 10px', color: '#fff'
+                }}>🏆 ₹{opt.prize.toLocaleString('en-IN')}</span>
+              </div>
+              <div style={{ display: 'flex', gap: '12px', fontSize: '11px', marginBottom: '4px' }}>
+                <span style={{ color: '#ef4444' }}>SL: <strong>5 pips</strong></span>
+                <span style={{ color: '#10b981' }}>TP: <strong>{opt.tpPips} pips</strong></span>
+              </div>
+              <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{opt.desc}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Actions */}
+        <button
+          disabled={enrollingRrr}
+          onClick={async () => {
+            setEnrollingRrr(true);
+            const res = await enrollChallengeAccount(selectedRrr);
+            setEnrollingRrr(false);
+            if (res && res.success) {
+              setShowRrrModal(false);
+              setToast({ message: `Enrolled with ${selectedRrr} ratio! Good luck! 🏆`, type: 'success' });
+              setTimeout(() => setToast(null), 5000);
+            } else {
+              setToast({ message: res?.message || 'Enrollment failed.', type: 'error' });
+              setTimeout(() => setToast(null), 4000);
+            }
+          }}
+          style={{
+            width: '100%', padding: '14px',
+            background: enrollingRrr ? 'rgba(56,189,248,0.3)' : 'linear-gradient(90deg, #38bdf8, #0ea5e9)',
+            color: '#000', border: 'none', borderRadius: '12px',
+            fontWeight: '800', fontSize: '14px', cursor: enrollingRrr ? 'not-allowed' : 'pointer',
+            boxShadow: '0 4px 15px rgba(56,189,248,0.3)',
+            transition: 'opacity 0.2s'
+          }}
+        >
+          {enrollingRrr ? 'Enrolling...' : `Enroll with ${selectedRrr} Ratio`}
+        </button>
+        <button
+          onClick={() => setShowRrrModal(false)}
+          style={{
+            width: '100%', marginTop: '10px', padding: '10px',
+            background: 'transparent', color: 'var(--text-secondary)',
+            border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px',
+            fontSize: '13px', cursor: 'pointer'
+          }}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+
   // Render Enrollment Screen for unenrolled Challenge account
   if (accountType === 'CHALLENGE' && !activeChallengeAccount) {
     return (
       <div className="app-container" style={{ paddingBottom: '90px' }}>
+        {showRrrModal && <RrrModal />}
         <header className="header" style={{ gap: '15px', flexWrap: 'wrap', justifyContent: 'space-between' }}>
           <div className="logo">
             <span>&#x2B22;</span> GoldTrader Pro
@@ -197,7 +367,7 @@ const TradingPlatform = () => {
               Funded Challenge
             </h2>
             <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '30px', lineHeight: '1.6' }}>
-              Prove your trading skill! Pass the Profit Target then win a Triplet Trade to earn ₹800 Cash Prize + Funded Status.
+              Prove your trading skill! Pass the Profit Target then win a Triplet Trade to earn Cash Prize + Funded Status.
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '35px', textAlign: 'left' }}>
@@ -214,26 +384,15 @@ const TradingPlatform = () => {
               <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--panel-border)', borderRadius: '16px', padding: '14px' }}>
                 <span style={{ fontSize: '10px', color: '#f59e0b', fontWeight: 'bold', display: 'block', textTransform: 'uppercase', marginBottom: '6px' }}>Stage 3 — Real Choice Trade</span>
                 <strong style={{ fontSize: '14px', color: '#fff', display: 'block', marginBottom: '4px' }}>Choose your target for real</strong>
-                <span style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: '1.4', display: 'block' }}>Choose between Triplet or Twice trade. Pass to earn ₹800 Cash Prize + Funded Status. Failure resets to Stage 1.</span>
+                <span style={{ fontSize: '11px', color: 'var(--text-secondary)', lineHeight: '1.4', display: 'block' }}>Choose between Triplet or Twice trade. Pass to earn Cash Prize + Funded Status. Failure resets to Stage 1.</span>
               </div>
             </div>
 
-
-
             <button
-              onClick={async () => {
-                if (!user) {
-                  navigate('/login');
-                  return;
-                }
-                if (window.confirm("Enroll in the 3-Stage Funded Challenge? This will start a new evaluation account starting at $1,000. Proceed?")) {
-                  const res = await enrollChallengeAccount();
-                  if (res && res.success) {
-                    alert("Enrolled successfully! Good luck trading XAUUSD!");
-                  } else {
-                    alert(res?.message || "Enrollment failed.");
-                  }
-                }
+              onClick={() => {
+                if (!user) { navigate('/login'); return; }
+                setSelectedRrr('1:4');
+                setShowRrrModal(true);
               }}
               style={{
                 width: '100%',
@@ -249,7 +408,7 @@ const TradingPlatform = () => {
                 transition: 'transform 0.1s'
               }}
             >
-              Enroll Challenge Account
+              Enroll &amp; Choose Ratio
             </button>
           </div>
         </div>
@@ -262,6 +421,7 @@ const TradingPlatform = () => {
 
   return (
     <div className="app-container" style={{ paddingBottom: '90px' }}>
+      {showRrrModal && <RrrModal />}
       {toast && (
         <div style={{
           position: 'fixed',
@@ -567,31 +727,42 @@ const TradingPlatform = () => {
             
             {accountType === 'CHALLENGE' ? (
               <>
-                <div className="input-group" style={{ marginTop: '15px' }}>
-                  <label>Take Profit (Pips) - Min 8</label>
-                  <input 
-                    type="number" 
-                    className="custom-input" 
-                    value={tpPips} 
-                    onChange={(e) => setTpPips(Number(e.target.value))}
-                    min="8"
-                  />
+                {/* Locked RRR badge */}
+                <div style={{
+                  marginTop: '15px',
+                  padding: '10px 14px',
+                  background: `linear-gradient(135deg, rgba(${lockedRrrCfg.ratio==='1:10'?'168,85,247':lockedRrrCfg.ratio==='1:5'?'245,158,11':'16,185,129'},0.12), transparent)`,
+                  border: `1px solid ${lockedRrrCfg.color}40`,
+                  borderRadius: '10px',
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Lock size={13} color={lockedRrrCfg.color} />
+                    <span style={{ fontSize: '12px', color: lockedRrrCfg.color, fontWeight: '700' }}>Locked Ratio: {lockedRrr}</span>
+                  </div>
+                  <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Prize: ₹{lockedRrrCfg.prize.toLocaleString('en-IN')}</span>
                 </div>
-                <div className="input-group" style={{ marginTop: '15px' }}>
-                  <label>Stop Loss (Pips) - Max 3</label>
-                  <input 
-                    type="number" 
-                    className="custom-input" 
-                    value={slPips} 
-                    onChange={(e) => setSlPips(Number(e.target.value))}
-                    max="3"
-                  />
+
+                {/* Auto-computed SL/TP display (read-only) */}
+                <div style={{ marginTop: '14px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  <div style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '10px', padding: '10px 12px' }}>
+                    <div style={{ fontSize: '10px', color: '#ef4444', fontWeight: '700', textTransform: 'uppercase', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <Lock size={9}/> SL · {lockedRrrCfg.slPips} pips
+                    </div>
+                    <div style={{ fontSize: '13px', fontWeight: '700', color: '#ef4444' }}>BUY: {computedSl}</div>
+                    <div style={{ fontSize: '11px', color: '#ef4444', opacity: 0.7 }}>SELL: {computedSlSell}</div>
+                  </div>
+                  <div style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: '10px', padding: '10px 12px' }}>
+                    <div style={{ fontSize: '10px', color: '#10b981', fontWeight: '700', textTransform: 'uppercase', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <Lock size={9}/> TP · {lockedRrrCfg.tpPips} pips
+                    </div>
+                    <div style={{ fontSize: '13px', fontWeight: '700', color: '#10b981' }}>BUY: {computedTp}</div>
+                    <div style={{ fontSize: '11px', color: '#10b981', opacity: 0.7 }}>SELL: {computedTpSell}</div>
+                  </div>
                 </div>
-                <div style={{ marginTop: '15px', marginBottom: '25px', padding: '12px', background: 'rgba(56, 189, 248, 0.04)', border: '1px solid rgba(56, 189, 248, 0.1)', borderRadius: '8px', fontSize: '12px', color: 'var(--text-secondary)', textAlign: 'left', lineHeight: '1.5' }}>
+                <div style={{ marginTop: '10px', marginBottom: '20px', padding: '9px 12px', background: 'rgba(56,189,248,0.05)', border: '1px solid rgba(56,189,248,0.1)', borderRadius: '8px', fontSize: '11px', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
                   Instrument: <strong>XAUUSD only</strong><br/>
-                  1 Pip = <strong>$1 USD</strong><br/>
-                  Potential Profit (TP): <strong style={{ color: 'var(--buy-color)' }}>+${(tpPips).toFixed(2)} USD</strong><br/>
-                  Potential Loss (SL): <strong style={{ color: 'var(--sell-color)' }}>-${(slPips).toFixed(2)} USD</strong>
+                  1 Pip = <strong>$1 USD</strong> · SL/TP auto-set from your locked ratio
                 </div>
               </>
             ) : (

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAppContext } from '../context/useAppContext';
 import { useNavigate } from 'react-router-dom';
 import MobileNavBar from './MobileNavBar';
-import { Trophy, Award, Star, Target } from 'lucide-react';
+import { Trophy, Award, Star, Target, Lock } from 'lucide-react';
 import {
   normalizeChallengeData,
   normalizeTradeChallengeData,
@@ -17,6 +17,11 @@ import {
   CHALLENGE_PRIZES
 } from '../utils/challenge';
 
+const RRR_OPTIONS = [
+  { ratio: '1:10', label: '1 : 10', slPips: 5, tpPips: 50, prize: 10000, color: '#a855f7', glow: 'rgba(168,85,247,0.3)', desc: 'High reward, hardest to maintain mentally', recommended: false },
+  { ratio: '1:5',  label: '1 : 5',  slPips: 5, tpPips: 25, prize: 60000, color: '#f59e0b', glow: 'rgba(245,158,11,0.3)', desc: 'Great reward for confident traders', recommended: false },
+  { ratio: '1:4',  label: '1 : 4',  slPips: 5, tpPips: 20, prize: 5000,  color: '#10b981', glow: 'rgba(16,185,129,0.3)', desc: 'Best for beginners — forgiving and achievable', recommended: true }
+];
 
 const ChallengeScreen = () => {
   const { 
@@ -30,6 +35,9 @@ const ChallengeScreen = () => {
   } = useAppContext();
   const navigate = useNavigate();
   const [dayHover, setDayHover] = useState(false);
+  const [showRrrModal, setShowRrrModal] = useState(false);
+  const [selectedRrr, setSelectedRrr] = useState('1:4');
+  const [enrollingRrr, setEnrollingRrr] = useState(false);
 
   const currentUserRecord = adminRecords.find((r) => r.username === user?.username);
   const challengeData = normalizeChallengeData(currentUserRecord);
@@ -54,6 +62,114 @@ const ChallengeScreen = () => {
     tradeChallengeData.targetTrades - tradeChallengeData.successfulTrades
   );
 
+  // Locked RRR for active challenge account
+  const lockedRrr = activeChallengeAccount?.riskRewardRatio || '1:4';
+  const lockedRrrCfg = RRR_OPTIONS.find(r => r.ratio === lockedRrr) || RRR_OPTIONS[2];
+
+  // RRR Selection Modal
+  const RrrModal = () => (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 9999,
+      background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(6px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px'
+    }}>
+      <div style={{
+        background: 'linear-gradient(160deg, #0f172a 0%, #0b0e1a 100%)',
+        border: '1px solid rgba(56,189,248,0.3)', borderRadius: '24px',
+        padding: '30px 24px', maxWidth: '420px', width: '100%',
+        boxShadow: '0 25px 60px rgba(0,0,0,0.7)'
+      }}>
+        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+          <div style={{
+            width: '56px', height: '56px', borderRadius: '16px',
+            background: 'linear-gradient(135deg, #38bdf8, #0ea5e9)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            margin: '0 auto 14px auto', boxShadow: '0 0 24px rgba(56,189,248,0.4)'
+          }}>
+            <Trophy size={28} color="#000" />
+          </div>
+          <h2 style={{ fontSize: '22px', fontWeight: '800', color: '#fff', marginBottom: '6px' }}>Choose Your Risk-Reward Ratio</h2>
+          <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+            This sets your <strong style={{ color: '#f59e0b' }}>locked SL &amp; TP</strong> for every challenge trade.<br/>
+            <span style={{ color: '#ef4444', fontWeight: '600' }}>Cannot be changed until your real account is won.</span>
+          </p>
+        </div>
+        <div style={{
+          background: 'rgba(56,189,248,0.08)', border: '1px solid rgba(56,189,248,0.2)',
+          borderRadius: '10px', padding: '10px 14px', marginBottom: '20px',
+          fontSize: '11px', color: 'var(--text-secondary)', lineHeight: '1.6'
+        }}>
+          📏 <strong style={{ color: '#38bdf8' }}>Risk is always 1 (= 5 pips SL)</strong><br/>
+          E.g. at entry <strong>4344</strong> with <strong>1:4</strong>: SL = 4339 | TP = 4364
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '22px' }}>
+          {RRR_OPTIONS.map(opt => (
+            <div key={opt.ratio} onClick={() => setSelectedRrr(opt.ratio)} style={{
+              position: 'relative',
+              background: selectedRrr === opt.ratio
+                ? `linear-gradient(135deg, rgba(${opt.ratio==='1:10'?'168,85,247':opt.ratio==='1:5'?'245,158,11':'16,185,129'},0.18), rgba(${opt.ratio==='1:10'?'168,85,247':opt.ratio==='1:5'?'245,158,11':'16,185,129'},0.06))`
+                : 'rgba(255,255,255,0.02)',
+              border: `1.5px solid ${selectedRrr === opt.ratio ? opt.color : 'rgba(255,255,255,0.07)'}`,
+              borderRadius: '14px', padding: '14px 16px', cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              boxShadow: selectedRrr === opt.ratio ? `0 0 16px ${opt.glow}` : 'none'
+            }}>
+              {opt.recommended && (
+                <div style={{
+                  position: 'absolute', top: '-10px', right: '14px',
+                  background: 'linear-gradient(90deg, #10b981, #059669)',
+                  color: '#000', fontSize: '9px', fontWeight: '800',
+                  padding: '2px 10px', borderRadius: '20px',
+                  display: 'flex', alignItems: 'center', gap: '4px'
+                }}>
+                  <Star size={8} fill="#000" /> Recommended
+                </div>
+              )}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <span style={{ fontSize: '20px', fontWeight: '900', color: opt.color }}>{opt.label}</span>
+                <span style={{ fontSize: '11px', fontWeight: '700', background: 'rgba(255,255,255,0.06)', borderRadius: '8px', padding: '3px 10px', color: '#fff' }}>🏆 ₹{opt.prize.toLocaleString('en-IN')}</span>
+              </div>
+              <div style={{ display: 'flex', gap: '12px', fontSize: '11px', marginBottom: '4px' }}>
+                <span style={{ color: '#ef4444' }}>SL: <strong>5 pips</strong></span>
+                <span style={{ color: '#10b981' }}>TP: <strong>{opt.tpPips} pips</strong></span>
+              </div>
+              <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{opt.desc}</div>
+            </div>
+          ))}
+        </div>
+        <button
+          disabled={enrollingRrr}
+          onClick={async () => {
+            setEnrollingRrr(true);
+            const res = await enrollChallengeAccount(selectedRrr);
+            setEnrollingRrr(false);
+            if (res && res.success) {
+              setShowRrrModal(false);
+              alert(`Enrolled with ${selectedRrr} ratio! Go to the Home tab → Challenge to start trading!`);
+            } else {
+              alert(res?.message || 'Enrollment failed.');
+            }
+          }}
+          style={{
+            width: '100%', padding: '14px',
+            background: enrollingRrr ? 'rgba(56,189,248,0.3)' : 'linear-gradient(90deg, #38bdf8, #0ea5e9)',
+            color: '#000', border: 'none', borderRadius: '12px',
+            fontWeight: '800', fontSize: '14px', cursor: enrollingRrr ? 'not-allowed' : 'pointer',
+            boxShadow: '0 4px 15px rgba(56,189,248,0.3)'
+          }}
+        >
+          {enrollingRrr ? 'Enrolling...' : `Enroll with ${selectedRrr} Ratio`}
+        </button>
+        <button onClick={() => setShowRrrModal(false)} style={{
+          width: '100%', marginTop: '10px', padding: '10px',
+          background: 'transparent', color: 'var(--text-secondary)',
+          border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px',
+          fontSize: '13px', cursor: 'pointer'
+        }}>Cancel</button>
+      </div>
+    </div>
+  );
+
   const handleEnroll60Trade = () => {
     const res = enrollSixtyTradeChallenge();
     if (res.success) {
@@ -76,6 +192,7 @@ const ChallengeScreen = () => {
         alignItems: 'center'
       }}
     >
+      {showRrrModal && <RrrModal />}
       <div style={{ maxWidth: '600px', width: '100%' }}>
         <div
           style={{
@@ -171,7 +288,9 @@ const ChallengeScreen = () => {
                 marginBottom: '8px'
               }}
             >
-              Target Reward: ₹800 Cash Prize + Funded Status
+              {activeChallengeAccount
+                ? `Locked Ratio: ${lockedRrr} · Prize: ₹${lockedRrrCfg.prize.toLocaleString('en-IN')}`
+                : 'Choose ratio on enroll · Prize: ₹5,000 – ₹60,000'}
             </span>
             <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '16px', lineHeight: '1.45' }}>
               Complete 3 stages (Demo Triplet → Demo Twice Trade → Real Choice) to win a cash prize and funded status.
@@ -212,7 +331,20 @@ const ChallengeScreen = () => {
                 </div>
                 {activeChallengeAccount.challengeStatus === 'PASSED' && (
                   <div style={{ background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.25)', borderRadius: '10px', padding: '12px 14px', marginBottom: '16px', fontSize: '12px', color: 'var(--buy-color)', fontWeight: 'bold' }}>
-                    Congratulations! You completed the challenge. A reward of ₹800 was added and is pending admin approval!
+                    Congratulations! You completed the challenge. A reward of ₹{lockedRrrCfg.prize.toLocaleString('en-IN')} was added and is pending admin approval!
+                  </div>
+                )}
+                {/* Locked Ratio Badge */}
+                {activeChallengeAccount.challengeStatus !== 'PASSED' && (
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: '8px',
+                    padding: '8px 12px', marginBottom: '10px',
+                    background: `${lockedRrrCfg.color}15`,
+                    border: `1px solid ${lockedRrrCfg.color}40`,
+                    borderRadius: '8px'
+                  }}>
+                    <Lock size={12} color={lockedRrrCfg.color} />
+                    <span style={{ fontSize: '11px', color: lockedRrrCfg.color, fontWeight: '700' }}>Locked Ratio: {lockedRrr} · SL 5 pips · TP {lockedRrrCfg.tpPips} pips</span>
                   </div>
                 )}
               </>
@@ -234,24 +366,15 @@ const ChallengeScreen = () => {
             >
               {!activeChallengeAccount && (
                 <button
-                  onClick={async () => {
-                    if (!user) {
-                      navigate('/login');
-                      return;
-                    }
-                    if (window.confirm("Enroll in the 3-Stage Funded Challenge? This will start a new evaluation account starting at $1,000. Proceed?")) {
-                      const res = await enrollChallengeAccount();
-                      if (res && res.success) {
-                        alert("Enrolled successfully! Go to the Home tab and select 'Challenge' to begin trading!");
-                      } else {
-                        alert(res?.message || "Enrollment failed.");
-                      }
-                    }
+                  onClick={() => {
+                    if (!user) { navigate('/login'); return; }
+                    setSelectedRrr('1:4');
+                    setShowRrrModal(true);
                   }}
                   className="btn"
                   style={{ padding: '8px 14px', fontSize: '12px', flex: 1, background: 'linear-gradient(90deg, var(--buy-color), #059669)', color: '#000', fontWeight: 'bold' }}
                 >
-                  Enroll in 3-Stage Challenge
+                  Enroll &amp; Choose Ratio
                 </button>
               )}
               {activeChallengeAccount && activeChallengeAccount.challengeStatus !== 'PASSED' && (

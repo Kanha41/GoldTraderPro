@@ -71,7 +71,8 @@ function formatUserResponse(user) {
   const transactions = sortedTransactions.filter(t => !t.isDemo);
   const demoTransactions = sortedTransactions.filter(t => t.isDemo);
 
-  const activeChallengeAccount = raw.challengeAccounts ? raw.challengeAccounts.find(c => c.challengeStatus === 'ACTIVE') : null;
+  const rawActive = raw.challengeAccounts ? raw.challengeAccounts.find(c => c.challengeStatus === 'ACTIVE') : null;
+  const activeChallengeAccount = rawActive ? { ...rawActive, riskRewardRatio: rawActive.riskRewardRatio || '1:4' } : null;
   const passedChallengeAccounts = raw.challengeAccounts ? raw.challengeAccounts.filter(c => c.challengeStatus === 'PASSED') : [];
   const failedChallengeAccounts = raw.challengeAccounts ? raw.challengeAccounts.filter(c => c.challengeStatus === 'FAILED') : [];
 
@@ -1156,8 +1157,21 @@ app.post('/api/admin/approve-transaction', authenticateToken, checkAdmin, async 
 // 3-STAGE FUNDED CHALLENGE ROUTES
 // ==========================================
 
+// RRR config — SL always 5 pips, TP = 5 × reward multiplier
+const RRR_CONFIG = {
+  '1:4':  { slPips: 5, tpPips: 20, prize: 5000 },
+  '1:5':  { slPips: 5, tpPips: 25, prize: 60000 },
+  '1:10': { slPips: 5, tpPips: 50, prize: 10000 }
+};
+
 // Enroll in the 3-Stage Challenge
 app.post('/api/challenge-account/enroll', authenticateToken, async (req, res) => {
+  const { riskRewardRatio } = req.body;
+
+  if (!riskRewardRatio || !RRR_CONFIG[riskRewardRatio]) {
+    return res.status(400).json({ success: false, message: 'Please select a valid Risk-Reward Ratio (1:4, 1:5, or 1:10).' });
+  }
+
   const t = await sequelize.transaction();
   try {
     const userObj = await getUserWithAssociations(req.user.id);
@@ -1175,14 +1189,15 @@ app.post('/api/challenge-account/enroll', authenticateToken, async (req, res) =>
     const isAdmin = userObj.role === 'admin';
     const startingStage = isAdmin ? 3 : 1;
 
-    // Create new challenge account
+    // Create new challenge account with chosen RRR (locked until real account won)
     const challengeAccount = await ChallengeAccount.create({
       userId: userObj.id,
       balance: 1000.00,
       equity: 1000.00,
       challengeStatus: 'ACTIVE',
       currentStage: startingStage,
-      highestBalance: 1000.00
+      highestBalance: 1000.00,
+      riskRewardRatio
     }, { transaction: t });
 
     // Create challenge progress
@@ -1250,7 +1265,7 @@ app.post('/api/challenge-account/select-target', authenticateToken, async (req, 
 
 // Add a trade under 3-Stage Challenge
 app.post('/api/challenge-account/trade/add', authenticateToken, async (req, res) => {
-  const { side, lotSize, currentPrice, tpPips = 8, slPips = 3 } = req.body;
+  const { side, lotSize, currentPrice } = req.body;
   const { Op } = require('./sequelize');
   const t = await sequelize.transaction();
 
@@ -1309,17 +1324,11 @@ app.post('/api/challenge-account/trade/add', authenticateToken, async (req, res)
       return res.status(400).json({ success: false, message: 'Please select a challenge target (Twice or Triplet) before trading.' });
     }
 
-    const tpDistance = parseFloat(tpPips);
-    const slDistance = parseFloat(slPips);
-
-    if (tpDistance < 8) {
-      await t.rollback();
-      return res.status(400).json({ success: false, message: 'Take Profit must be at least 8 pips.' });
-    }
-    if (slDistance > 3) {
-      await t.rollback();
-      return res.status(400).json({ success: false, message: 'Stop Loss must be at most 3 pips.' });
-    }
+    // Auto-compute SL/TP from locked RRR (cannot be overridden by client)
+    const rrr = challengeAccount.riskRewardRatio || '1:4';
+    const rrrCfg = RRR_CONFIG[rrr] || RRR_CONFIG['1:4'];
+    const slDistance = rrrCfg.slPips;   // always 5
+    const tpDistance = rrrCfg.tpPips;   // ratio-specific
 
     const priceNum = parseFloat(currentPrice);
     const entryPrice = priceNum;
