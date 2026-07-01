@@ -323,7 +323,7 @@ const TradingPlatform = () => {
   );
 
   // Render Enrollment Screen for unenrolled Challenge account
-  if (accountType === 'CHALLENGE' && !activeChallengeAccount) {
+  if (accountType === 'CHALLENGE' && user && !activeChallengeAccount) {
     return (
       <div className="app-container" style={{ paddingBottom: '90px' }}>
         {showRrrModal && <RrrModal />}
